@@ -6,16 +6,43 @@
 <?import javafx.scene.input.KeyCodeCombination?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.canvas.Canvas?>
+<?import javafx.scene.control.SeparatorMenuItem?>
 
 <AnchorPane fx:id="anchorPane" xmlns:fx="http://javafx.com/fxml" fx:controller="com.cgvsu.GuiController">
     <MenuBar>
         <Menu mnemonicParsing="false" text="File">
             <MenuItem mnemonicParsing="false" onAction="#onOpenModelMenuItemClick" text="Load Model">
-            <accelerator>
-                <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="F"/>
-            </accelerator>
+                <accelerator>
+                    <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="O"/>
+                </accelerator>
+            </MenuItem>
+            <SeparatorMenuItem/>
+            <MenuItem mnemonicParsing="false" onAction="#onModelInfoMenuItemClick" text="Model Info">
+                <accelerator>
+                    <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="I"/>
+                </accelerator>
             </MenuItem>
         </Menu>
+
+        <Menu mnemonicParsing="false" text="Model Operations">
+            <MenuItem mnemonicParsing="false" onAction="#onTriangulateModelMenuItemClick" text="Triangulate Model">
+                <accelerator>
+                    <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="T"/>
+                </accelerator>
+            </MenuItem>
+            <MenuItem mnemonicParsing="false" onAction="#onComputeNormalsMenuItemClick" text="Compute Normals">
+                <accelerator>
+                    <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="N"/>
+                </accelerator>
+<!--            </MenuItem>-->
+<!--            <SeparatorMenuItem/>-->
+<!--            <MenuItem mnemonicParsing="false" onAction="#onResetModelMenuItemClick" text="Reset Model">-->
+<!--                <accelerator>-->
+<!--                    <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="R"/>-->
+<!--                </accelerator>-->
+            </MenuItem>
+        </Menu>
+
         <Menu mnemonicParsing="false" text="Camera Options">
             <MenuItem mnemonicParsing="false" onAction="#handleCameraForward" text="Forward">
                 <accelerator>
