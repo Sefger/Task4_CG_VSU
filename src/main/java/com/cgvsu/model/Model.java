@@ -15,6 +15,22 @@ public class Model {
     protected ArrayList<Vector3f> normals = new ArrayList<>();
     protected ArrayList<Polygon> polygons = new ArrayList<>();
 
+    // Не радактировать!!!
+    public Model(List<Vector3f> vert, List<Vector2f> textureVert, List<Vector3f> normals, List<Polygon> polygons){
+        this.vertices= new ArrayList<>(vert);
+        this.textureVertices = new ArrayList<>(textureVert);
+        this.normals = new ArrayList<>(normals);
+        this.polygons = new ArrayList<>(polygons);
+
+    }
+    // Можем оставить так как оно есть
+    // Сделано для того, чтобы обеспечить сохранность данных
+    public Model copy(){
+        return new Model(this.vertices, this.textureVertices, this.normals, this.polygons);
+    }
+    public Model(){
+
+    }
     public void computeNormals() {
         normals.clear();
         for (int i = 0; i < vertices.size(); i++) {
