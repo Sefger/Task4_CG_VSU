@@ -83,21 +83,37 @@ public class Model {
         return ModelProcessor.validateTriangulatedModel(this);
     }
 
-    // Геттеры и сеттеры остаются без изменений
-    public ArrayList<Polygon> getPolygons() {
-        return new ArrayList<>(polygons);
+    // Геттеры и cеттеры в стиле ооп ломают мне ноутбук, так что сильно извиняюсь, но это капец
+    public List<Vector3f> getVertices() {
+        return Collections.unmodifiableList(vertices);
     }
 
-    public ArrayList<Vector2f> getTextureVertices() {
-        return new ArrayList<>(textureVertices);
+    public List<Vector2f> getTextureVertices() {
+        return Collections.unmodifiableList(textureVertices);
     }
 
-    public ArrayList<Vector3f> getNormals() {
-        return new ArrayList<>(normals);
+    public List<Vector3f> getNormals() {
+        return Collections.unmodifiableList(normals);
     }
 
-    public ArrayList<Vector3f> getVertices() {
-        return new ArrayList<>(vertices);
+    public List<Polygon> getPolygons() {
+        return Collections.unmodifiableList(polygons);
+    }
+
+    public ArrayList<Vector3f> getVerticesInternal() {
+        return vertices;
+    }
+
+    public ArrayList<Vector2f> getTextureVerticesInternal() {
+        return textureVertices;
+    }
+
+    public ArrayList<Vector3f> getNormalsInternal() {
+        return normals;
+    }
+
+    public ArrayList<Polygon> getPolygonsInternal() {
+        return polygons;
     }
 
     public void addVertices(Vector3f v3) {
