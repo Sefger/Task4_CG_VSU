@@ -189,11 +189,11 @@ public class ModelProcessor {
                             normal.getZ() * normal.getZ()
             );
 
-            if (length!=0){
+            if (length != 0) {
                 Vector3f normalizedNormal = new Vector3f(
-                        normal.getX()/length,
-                        normal.getY()/length,
-                        normal.getZ()/length
+                        normal.getX() / length,
+                        normal.getY() / length,
+                        normal.getZ() / length
                 );
                 vectors.set(i, normalizedNormal);
             }
@@ -201,10 +201,10 @@ public class ModelProcessor {
     }
 
     /**
-     *  Обновляет индексы нормалей в полигонах
+     * Обновляет индексы нормалей в полигонах
      */
-    private static void updatePolygonNormalIndices(ArrayList<Polygon> polygons){
-        for (Polygon polygon: polygons){
+    private static void updatePolygonNormalIndices(ArrayList<Polygon> polygons) {
+        for (Polygon polygon : polygons) {
             // так безопасней иначе была бы пляска с сылками
             ArrayList<Integer> normalIndices = new ArrayList<>(polygon.getVertexIndices());
             polygon.setNormalIndices(normalIndices);
@@ -214,13 +214,13 @@ public class ModelProcessor {
     /**
      * Проверяет, нужно ли триангулировать модель
      */
-    public static boolean needsTriangulation(Model model){
-        if (model == null || model.polygons== null){
+    public static boolean needsTriangulation(Model model) {
+        if (model == null || model.polygons == null) {
             return false;
         }
 
-        for (Polygon polygon: model.polygons){
-            if (polygon.getTextureVertexIndices().size() >3){
+        for (Polygon polygon : model.polygons) {
+            if (polygon.getTextureVertexIndices().size() > 3) {
                 return true;
             }
         }
@@ -231,13 +231,13 @@ public class ModelProcessor {
     /**
      * Проверяет, полностью ли триангулировать модель
      */
-    public static boolean isTriangulated(Model model){
-        if (model == null || model.polygons == null){
+    public static boolean isTriangulated(Model model) {
+        if (model == null || model.polygons == null) {
             return false;
         }
 
-        for (Polygon polygon: model.polygons){
-            if (polygon.getVertexIndices().size() !=3){
+        for (Polygon polygon : model.polygons) {
+            if (polygon.getVertexIndices().size() != 3) {
                 return false;
             }
         }
@@ -247,7 +247,7 @@ public class ModelProcessor {
     /**
      * Получить статистку по полигонам (отладка)
      */
-    public static String getPolygonStatistics(Model model){
+    public static String getPolygonStatistics(Model model) {
         if (model == null || model.polygons == null) {
             return "No polygons";
         }
@@ -271,5 +271,54 @@ public class ModelProcessor {
                 triangleCount, quadCount, ngonCount);
     }
 
+    private static boolean validateTriangle(Polygon polygon, Model model) {
+        ArrayList<Integer> vertexIndices = polygon.getVertexIndices();
 
+        // Проверка размера
+        if (vertexIndices.size() != 3) {
+            return false;
+        }
+
+        // Проверка индексов вершин
+        for (int vertexIndex : vertexIndices) {
+            if (vertexIndex < 0 || vertexIndex >= model.vertices.size()) {
+                return false;
+            }
+        }
+
+        // Проверка на уникальность вершин
+        if (vertexIndices.get(0).equals(vertexIndices.get(1)) ||
+                vertexIndices.get(1).equals(vertexIndices.get(2)) ||
+                vertexIndices.get(0).equals(vertexIndices.get(2))) {
+            return false;
+        }
+
+        // Проверка текстурных координат
+        ArrayList<Integer> textureIndices = polygon.getTextureVertexIndices();
+        if (!textureIndices.isEmpty()) {
+            if (textureIndices.size() != 3) {
+                return false;
+            }
+            for (int texIndex : textureIndices) {
+                if (texIndex < 0 || texIndex >= model.textureVertices.size()) {
+                    return false;
+                }
+            }
+        }
+
+        // Проверка нормалей
+        ArrayList<Integer> normalIndices = polygon.getNormalIndices();
+        if (!normalIndices.isEmpty()) {
+            if (normalIndices.size() != 3) {
+                return false;
+            }
+            for (int normalIndex : normalIndices) {
+                if (normalIndex < 0 || normalIndex >= model.normals.size()) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
 }
