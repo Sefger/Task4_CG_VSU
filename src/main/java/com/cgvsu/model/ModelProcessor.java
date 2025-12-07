@@ -112,9 +112,85 @@ public class ModelProcessor {
 
         for (Polygon polygon : model.polygons) {
             Vector3f polygonNormal = computePolygonNormal(model.vertices, polygon);
+            if (polygonNormal !=null){
+                addPolygonNormalToVertices(model.normals, polygon, polygonNormal);
+            }
         }
 
+        // Нормализуем векторы
+        normalizeAllVectors(model.normals);
 
+        //Обновляем индексы
+        updatePolygonNormalIndices(model.polygons);
+
+
+    }
+
+    /**
+     * Вычисляет нормали для уже триангулированной модели (оптимизированная версия)
+     */
+    public static void computeNormalsForTriangulated(Model model) {
+        if (model == null || model.vertices == null || model.polygons == null) {
+            return;
+        }
+
+        // Проверяем, что модель триангулирована
+        if (!isTriangulated(model)) {
+            throw new IllegalArgumentException("Модель должна быть триангулирована");
+        }
+
+        model.normals.clear();
+
+        // Инициализируем нормали нулевыми векторами
+        for (int i = 0; i < model.vertices.size(); i++) {
+            model.normals.add(new Vector3f(0, 0, 0));
+        }
+
+        // Для треугольников вычисляем нормали напрямую
+        for (Polygon polygon : model.polygons) {
+            if (polygon.getVertexIndices().size() != 3) {
+                continue;
+            }
+
+            Vector3f v1 = model.vertices.get(polygon.getVertexIndices().get(0));
+            Vector3f v2 = model.vertices.get(polygon.getVertexIndices().get(1));
+            Vector3f v3 = model.vertices.get(polygon.getVertexIndices().get(2));
+
+            Vector3f edge1 = new Vector3f(
+                    v2.getX() - v1.getX(),
+                    v2.getY() - v1.getY(),
+                    v2.getZ() - v1.getZ()
+            );
+
+            Vector3f edge2 = new Vector3f(
+                    v3.getX() - v1.getX(),
+                    v3.getY() - v1.getY(),
+                    v3.getZ() - v1.getZ()
+            );
+
+            Vector3f triangleNormal = new Vector3f(
+                    edge1.getY() * edge2.getZ() - edge1.getZ() * edge2.getY(),
+                    edge1.getZ() * edge2.getX() - edge1.getX() * edge2.getZ(),
+                    edge1.getX() * edge2.getY() - edge1.getY() * edge2.getX()
+            );
+
+            // Добавляем нормаль ко всем вершинам треугольника
+            for (Integer vertexIndex : polygon.getVertexIndices()) {
+                Vector3f currentNormal = model.normals.get(vertexIndex);
+                Vector3f newNormal = new Vector3f(
+                        currentNormal.getX() + triangleNormal.getX(),
+                        currentNormal.getY() + triangleNormal.getY(),
+                        currentNormal.getZ() + triangleNormal.getZ()
+                );
+                model.normals.set(vertexIndex, newNormal);
+            }
+        }
+
+        // Нормализуем векторы
+        normalizeAllVectors(model.normals);
+
+        // Обновляем индексы нормалей в полигонах
+        updatePolygonNormalIndices(model.polygons);
     }
 
     private static Vector3f computePolygonNormal(ArrayList<Vector3f> vertices, Polygon polygon) {
@@ -271,6 +347,60 @@ public class ModelProcessor {
                 triangleCount, quadCount, ngonCount);
     }
 
+    private static boolean validateTriangulatedModel(Polygon polygon, Model model) {
+        ArrayList<Integer> vertexIndices = polygon.getVertexIndices();
+
+        // Проверка размера
+        if (vertexIndices.size() != 3) {
+            return false;
+        }
+
+        // Проверка индексов вершин
+        for (int vertexIndex : vertexIndices) {
+            if (vertexIndex < 0 || vertexIndex >= model.vertices.size()) {
+                return false;
+            }
+        }
+
+        // Проверка на уникальность вершин
+        if (vertexIndices.get(0).equals(vertexIndices.get(1)) ||
+                vertexIndices.get(1).equals(vertexIndices.get(2)) ||
+                vertexIndices.get(0).equals(vertexIndices.get(2))) {
+            return false;
+        }
+
+        // Проверка текстурных координат
+        ArrayList<Integer> textureIndices = polygon.getTextureVertexIndices();
+        if (!textureIndices.isEmpty()) {
+            if (textureIndices.size() != 3) {
+                return false;
+            }
+            for (int texIndex : textureIndices) {
+                if (texIndex < 0 || texIndex >= model.textureVertices.size()) {
+                    return false;
+                }
+            }
+        }
+
+        // Проверка нормалей
+        ArrayList<Integer> normalIndices = polygon.getNormalIndices();
+        if (!normalIndices.isEmpty()) {
+            if (normalIndices.size() != 3) {
+                return false;
+            }
+            for (int normalIndex : normalIndices) {
+                if (normalIndex < 0 || normalIndex >= model.normals.size()) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Проверяет валидность треугольника
+     */
     private static boolean validateTriangle(Polygon polygon, Model model) {
         ArrayList<Integer> vertexIndices = polygon.getVertexIndices();
 
@@ -321,4 +451,21 @@ public class ModelProcessor {
 
         return true;
     }
+    /**
+     * Проверяет валидность триангулированной модели
+     */
+    public static boolean validateTriangulatedModel(Model model) {
+        if (!isTriangulated(model)) {
+            return false;
+        }
+
+        for (Polygon polygon : model.polygons) {
+            if (!validateTriangle(polygon, model)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
 }
