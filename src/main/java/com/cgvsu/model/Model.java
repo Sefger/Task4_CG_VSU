@@ -10,10 +10,10 @@ import java.util.*;
 import java.util.*;
 public class Model {
 
-    public ArrayList<Vector3f> vertices = new ArrayList<>();
-    public ArrayList<Vector2f> textureVertices = new ArrayList<>();
-    public ArrayList<Vector3f> normals = new ArrayList<>();
-    public ArrayList<Polygon> polygons = new ArrayList<>();
+    protected ArrayList<Vector3f> vertices = new ArrayList<>();
+    protected ArrayList<Vector2f> textureVertices = new ArrayList<>();
+    protected ArrayList<Vector3f> normals = new ArrayList<>();
+    protected ArrayList<Polygon> polygons = new ArrayList<>();
 
     public void computeNormals() {
         normals.clear();
@@ -113,5 +113,17 @@ public class Model {
 
     public ArrayList<Vector3f> getVertices() {
         return new ArrayList<>(vertices);
+    }
+    public void addVertices(Vector3f v3){
+        this.vertices.add(v3);
+    }
+    public void addTextureVertices(Vector2f v2){
+        this.textureVertices.add(v2);
+    }
+    public void addNormal(Vector3f v3){
+        this.normals.add(v3);
+    }
+    public void addPolygon(Polygon p){
+        this.polygons.add(p);
     }
 }
