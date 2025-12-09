@@ -43,10 +43,10 @@ public class ObjReader {
 				// А еще это портит читаемость
 				// И не стоит забывать про тесты. Чем проще вам задать данные для теста, проверить, что метод рабочий,
 				// тем лучше.
-				case OBJ_VERTEX_TOKEN -> result.addVertices(parseVertex(wordsInLine, lineInd));
-				case OBJ_TEXTURE_TOKEN -> result.addTextureVertices(parseTextureVertex(wordsInLine, lineInd));
-				case OBJ_NORMAL_TOKEN -> result.addNormal(parseNormal(wordsInLine, lineInd));
-				case OBJ_FACE_TOKEN -> result.addPolygon(parseFace(wordsInLine, lineInd));
+				case OBJ_VERTEX_TOKEN -> result.getVertices().add(parseVertex(wordsInLine, lineInd));
+				case OBJ_TEXTURE_TOKEN -> result.getTextureVertices().add(parseTextureVertex(wordsInLine, lineInd));
+				case OBJ_NORMAL_TOKEN -> result.getNormals().add(parseNormal(wordsInLine, lineInd));
+				case OBJ_FACE_TOKEN -> result.getPolygons().add(parseFace(wordsInLine, lineInd));
 				default -> {}
 			}
 		}
@@ -108,10 +108,17 @@ public class ObjReader {
 			parseFaceWord(s, onePolygonVertexIndices, onePolygonTextureVertexIndices, onePolygonNormalIndices, lineInd);
 		}
 
+		if (onePolygonVertexIndices.size() < 3) {
+			throw new ObjReaderException("Polygon must have at least 3 vertices.", lineInd);
+		}
+
 		Polygon result = new Polygon();
 		result.setVertexIndices(onePolygonVertexIndices);
-		result.setTextureVertexIndices(onePolygonTextureVertexIndices);
-		result.setNormalIndices(onePolygonNormalIndices);
+
+		result.setTextureVertexIndices(onePolygonTextureVertexIndices.isEmpty() ? null : onePolygonTextureVertexIndices);
+
+		result.setNormalIndices(onePolygonNormalIndices.isEmpty() ? null : onePolygonNormalIndices);
+
 		return result;
 	}
 
@@ -128,22 +135,29 @@ public class ObjReader {
 			String[] wordIndices = wordInLine.split("/");
 			switch (wordIndices.length) {
 				case 1 -> {
+					// f v1 v2 v3
 					onePolygonVertexIndices.add(Integer.parseInt(wordIndices[0]) - 1);
 				}
 				case 2 -> {
+					// f v1/vt1 v2/vt2 v3/vt3
 					onePolygonVertexIndices.add(Integer.parseInt(wordIndices[0]) - 1);
 					onePolygonTextureVertexIndices.add(Integer.parseInt(wordIndices[1]) - 1);
 				}
 				case 3 -> {
+					// f v1/vt1/vn1 v2/vt2/vn2 v3/vt3/vn3
+					//  f v1//vn1 v2//vn2 v3//vn3
 					onePolygonVertexIndices.add(Integer.parseInt(wordIndices[0]) - 1);
-					onePolygonNormalIndices.add(Integer.parseInt(wordIndices[2]) - 1);
-					if (!wordIndices[1].equals("")) {
+
+					if (!wordIndices[1].isEmpty()) {
 						onePolygonTextureVertexIndices.add(Integer.parseInt(wordIndices[1]) - 1);
 					}
+
+					if (!wordIndices[2].isEmpty()) {
+						onePolygonNormalIndices.add(Integer.parseInt(wordIndices[2]) - 1);
+					}
 				}
-				default -> {
-					throw new ObjReaderException("Invalid element size.", lineInd);
-				}
+				default ->
+						throw new ObjReaderException("Invalid element size.", lineInd);
 			}
 
 		} catch(NumberFormatException e) {
