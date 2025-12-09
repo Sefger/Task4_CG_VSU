@@ -23,7 +23,7 @@ public class Triangulator {
         return triangulateModel;
     }
 
-    private ArrayList<Polygon> triangulatePolygon(Polygon polygon) {
+    protected ArrayList<Polygon> triangulatePolygon(Polygon polygon) {
         ArrayList<Polygon> triangles = new ArrayList<>();
         ArrayList<Integer> vertexIndices = polygon.getVertexIndices();
         ArrayList<Integer> textureIndices = polygon.getTextureVertexIndices();

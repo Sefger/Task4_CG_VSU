@@ -43,10 +43,10 @@ public class ObjReader {
 				// А еще это портит читаемость
 				// И не стоит забывать про тесты. Чем проще вам задать данные для теста, проверить, что метод рабочий,
 				// тем лучше.
-				case OBJ_VERTEX_TOKEN -> result.vertices.add(parseVertex(wordsInLine, lineInd));
-				case OBJ_TEXTURE_TOKEN -> result.textureVertices.add(parseTextureVertex(wordsInLine, lineInd));
-				case OBJ_NORMAL_TOKEN -> result.normals.add(parseNormal(wordsInLine, lineInd));
-				case OBJ_FACE_TOKEN -> result.polygons.add(parseFace(wordsInLine, lineInd));
+				case OBJ_VERTEX_TOKEN -> result.addVertices(parseVertex(wordsInLine, lineInd));
+				case OBJ_TEXTURE_TOKEN -> result.addTextureVertices(parseTextureVertex(wordsInLine, lineInd));
+				case OBJ_NORMAL_TOKEN -> result.addNormal(parseNormal(wordsInLine, lineInd));
+				case OBJ_FACE_TOKEN -> result.addPolygon(parseFace(wordsInLine, lineInd));
 				default -> {}
 			}
 		}

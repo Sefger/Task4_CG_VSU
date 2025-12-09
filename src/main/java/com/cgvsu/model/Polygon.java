@@ -8,7 +8,6 @@ public class Polygon {
     private ArrayList<Integer> textureVertexIndices;
     private ArrayList<Integer> normalIndices;
 
-
     public Polygon() {
         vertexIndices = new ArrayList<Integer>();
         textureVertexIndices = new ArrayList<Integer>();
@@ -40,5 +39,16 @@ public class Polygon {
 
     public ArrayList<Integer> getNormalIndices() {
         return normalIndices;
+    }
+
+    protected void addVertexIndices(Integer idx){
+        this.vertexIndices.add(idx);
+    }
+
+    protected void addTextureVertexIndices(Integer idx){
+        this.textureVertexIndices.add(idx);
+    }
+    protected void addNormalIndices(Integer idx){
+        this.normalIndices.add(idx);
     }
 }
