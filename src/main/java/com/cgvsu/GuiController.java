@@ -1,6 +1,8 @@
 package com.cgvsu;
 
 import com.cgvsu.model.ModelProcessor;
+import com.cgvsu.objwriter.ObjWriter;
+import com.cgvsu.objwriter.ObjWriterException;
 import com.cgvsu.render_engine.RenderEngine;
 import javafx.fxml.FXML;
 import javafx.animation.Animation;
@@ -37,7 +39,7 @@ public class GuiController {
     private Model mesh = null;
 
     private Camera camera = new Camera(
-            new Vector3f(0, 00, 100),
+            new Vector3f(0, 0, 100),
             new Vector3f(0, 0, 0),
             1.0F, 1, 0.01F, 100);
 
@@ -137,7 +139,7 @@ public class GuiController {
 
             //Триунгируем
             mesh = ModelProcessor.triangulateWithEarClipping(mesh);
-
+            System.out.println(ModelProcessor.isTriangulated(mesh));
             showInfo("Модель триангулирована",
                     "Модель успешно триангулирована.\n");
             //может быть состоит здесь показать статистику, но зачем?
@@ -165,13 +167,65 @@ public class GuiController {
     private void onModelInfoMenuItemClick() {
         showModelInfo();
     }
+    @FXML
+    private void onSaveModelMenuItemClick(ActionEvent actionEvent) {
+        if (mesh == null) {
+            showWarning("Модель не загружена", "Сначала загрузите модель");
+            return;
+        }
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("*.obj"));
+        fileChooser.setTitle("Save Model As");
+        fileChooser.setInitialFileName("model.obj");
+
+        // Устанавливаем начальную директорию
+        File initialDir = new File(System.getProperty("user.home") + File.separator + "Documents");
+        if (initialDir.exists() && initialDir.isDirectory()) {
+            fileChooser.setInitialDirectory(initialDir);
+        }
+
+        File file = fileChooser.showSaveDialog(canvas.getScene().getWindow());
+
+        if (file != null) {
+            try {
+                // Убедимся, что файл имеет расширение .obj
+                String filePath = file.getAbsolutePath();
+
+
+                // Сохраняем модель с помощью ObjWriter
+                ObjWriter.write(mesh, filePath);
+
+                showInfo("Модель сохранена",
+                        "Модель успешно сохранена в файл:\n" + filePath);
+
+            } catch (ObjWriterException e) {
+                // Специфичные ошибки ObjWriter
+                showError("Ошибка данных модели",
+                        "Не удалось сохранить модель:\n" +
+                                e.getMessage() + "\n" +
+                                "Проверьте корректность данных модели.");
+            } catch (IOException e) {
+                // Ошибки файловой системы
+                showError("Ошибка файловой системы",
+                        "Не удалось записать файл:\n" +
+                                e.getMessage());
+            } catch (Exception e) {
+                // Все остальные ошибки
+                showError("Неизвестная ошибка",
+                        "Произошла непредвиденная ошибка:\n" +
+                                e.getMessage());
+                e.printStackTrace();
+            }
+        }
+    }
+
 
     private void showModelInfo() {
         if (mesh == null) {
             showInfo("Информация о модели", "Модель не загружена");
             return;
         }
-
         StringBuilder info = new StringBuilder();
         info.append("Вершины: ").append(mesh.getVertices().size()).append("\n");
         info.append("Текстурные координаты: ").append(mesh.getTextureVertices().size()).append("\n");
@@ -183,7 +237,6 @@ public class GuiController {
         info.append("\n");
         info.append("Триангулирована: ").append(ModelProcessor.isTriangulated(mesh) ? "Да" : "Нет").append("\n");
         info.append("Нуждается в триангуляции: ").append(ModelProcessor.needsTriangulation(mesh) ? "Да" : "Нет");
-
         showInfo("Информация о модели", info.toString());
     }
 
