@@ -313,7 +313,7 @@ public class ModelProcessor {
         }
 
         for (Polygon polygon : model.polygons) {
-            if (polygon.getVertexIndices().size() != 3) {
+            if (polygon.getVertexIndices().size() > 3) {
                 return false;
             }
         }
