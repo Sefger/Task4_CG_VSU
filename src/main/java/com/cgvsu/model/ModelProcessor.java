@@ -1,5 +1,6 @@
 package com.cgvsu.model;
 
+import com.cgvsu.math.Vector2f;
 import com.cgvsu.math.Vector3f;
 import javafx.scene.image.PixelWriter;
 
@@ -112,7 +113,7 @@ public class ModelProcessor {
 
         for (Polygon polygon : model.polygons) {
             Vector3f polygonNormal = computePolygonNormal(model.vertices, polygon);
-            if (polygonNormal !=null){
+            if (polygonNormal != null) {
                 addPolygonNormalToVertices(model.normals, polygon, polygonNormal);
             }
         }
@@ -226,8 +227,8 @@ public class ModelProcessor {
             );
 
             sumNormal.setX(sumNormal.getX() + triangleNormal.getX());
-            sumNormal.setY(sumNormal.getX() + triangleNormal.getX());
-            sumNormal.setZ(sumNormal.getX() + triangleNormal.getX());
+            sumNormal.setY(sumNormal.getY() + triangleNormal.getY());
+            sumNormal.setZ(sumNormal.getZ() + triangleNormal.getZ());
         }
 
         return sumNormal;
@@ -451,6 +452,7 @@ public class ModelProcessor {
 
         return true;
     }
+
     /**
      * Проверяет валидность триангулированной модели
      */
@@ -468,4 +470,34 @@ public class ModelProcessor {
         return true;
     }
 
+    public static float calculateLightIntensity(
+            Vector3f n1, Vector3f n2, Vector3f n3,
+            float alpha, float beta, float gamma,
+            Vector3f lightDirection) {
+        // Интерполируем нормаль в текущей точке
+        float nx = n1.x * alpha + n2.x * beta + n3.x * gamma;
+        float ny = n1.y * alpha + n2.y * beta + n3.y * gamma;
+        float nz = n1.z * alpha + n2.z * beta + n3.z * gamma;
+
+        // Нормализуем полученный вектор
+        float length = (float) Math.sqrt(nx * nx + ny * ny + nz * nz);
+        if (length<1e-7f){
+            return 0.1f;
+        }
+        nx/=length;
+        ny/=length;
+        nz/=length;
+        float dot = nx*lightDirection.x+ny*lightDirection.y+ nz*lightDirection.z;
+
+        return Math.max(0.1f, dot);
+    }
+
+    public static Vector2f interpolateUV(
+            Vector2f uv1, Vector2f uv2, Vector2f uv3,
+            float alpha, float beta, float gamma){
+        return new Vector2f(
+          uv1.x*alpha+uv2.x*beta+ uv3.x*gamma,
+                uv1.y*alpha+uv2.y*beta+ uv3.y*gamma
+        );
+    }
 }
