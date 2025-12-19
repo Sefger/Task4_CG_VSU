@@ -9,6 +9,7 @@ import javafx.animation.Timeline;
 import javafx.event.ActionEvent;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.Alert;
+import javafx.scene.image.Image;
 import javafx.scene.layout.AnchorPane;
 import javafx.stage.Stage;
 import javafx.stage.FileChooser;
@@ -35,7 +36,7 @@ public class GuiController {
     private Canvas canvas;
 
     private Model mesh = null;
-
+    Image texture = null;
     private Camera camera = new Camera(
             new Vector3f(0, 00, 100),
             new Vector3f(0, 0, 0),
@@ -59,7 +60,7 @@ public class GuiController {
             camera.setAspectRatio((float) (width / height));
 
             if (mesh != null) {
-                RenderEngine.render(canvas.getGraphicsContext2D(), camera, mesh, (int) width, (int) height);
+                RenderEngine.render(canvas.getGraphicsContext2D(), camera, mesh, (int) width, (int) height, texture);
             }
         });
 
