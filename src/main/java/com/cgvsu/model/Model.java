@@ -66,13 +66,8 @@ public class Model {
         ModelProcessor.computeNormals(this);
     }
 
-    /**
-     * Триангулирует модель (простая триангуляция веером)
-     * @return новая триангулированная модель
-     */
-    public Model triangulate() {
-        return ModelProcessor.triangulate(this);
-    }
+
+
 
     /**
      * Триангулирует модель с использованием алгоритма "ухоотсечения"
