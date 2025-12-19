@@ -26,7 +26,34 @@ public class Model {
     // Можем оставить так как оно есть
     // Сделано для того, чтобы обеспечить сохранность данных
     public Model copy() {
-        return new Model(this.vertices, this.textureVertices, this.normals, this.polygons);
+        Model newModel = new Model();
+
+        // Глубокое копирование вершин
+        for (Vector3f v : this.vertices) {
+            newModel.vertices.add(new Vector3f(v.x, v.y, v.z));
+        }
+
+        // Глубокое копирование текстурных вершин
+        for (Vector2f vt : this.textureVertices) {
+            newModel.textureVertices.add(new Vector2f(vt.x, vt.y));
+        }
+
+        // Глубокое копирование нормалей
+        for (Vector3f n : this.normals) {
+            newModel.normals.add(new Vector3f(n.x, n.y, n.z));
+        }
+
+        // Полигоны можно копировать поверхностно, так как они хранят Integer (immutable),
+        // но сами объекты Polygon нужно создавать новые!
+        for (Polygon p : this.polygons) {
+            Polygon newP = new Polygon();
+            newP.setVertexIndices(new ArrayList<>(p.getVertexIndices()));
+            newP.setTextureVertexIndices(new ArrayList<>(p.getTextureVertexIndices()));
+            newP.setNormalIndices(new ArrayList<>(p.getNormalIndices()));
+            newModel.polygons.add(newP);
+        }
+
+        return newModel;
     }
 
     public Model() {
