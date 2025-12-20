@@ -9,14 +9,22 @@
 <?import javafx.scene.control.SeparatorMenuItem?>
 
 <AnchorPane fx:id="anchorPane" xmlns:fx="http://javafx.com/fxml" fx:controller="com.cgvsu.GuiController">
-    <MenuBar>
+    <MenuBar AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
         <Menu mnemonicParsing="false" text="File">
             <MenuItem mnemonicParsing="false" onAction="#onOpenModelMenuItemClick" text="Load Model">
                 <accelerator>
                     <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="O"/>
                 </accelerator>
             </MenuItem>
+
+            <MenuItem mnemonicParsing="false" onAction="#onOpenTextureMenuItemClick" text="Load Texture">
+                <accelerator>
+                    <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="K"/>
+                </accelerator>
+            </MenuItem>
+
             <SeparatorMenuItem/>
+
             <MenuItem mnemonicParsing="false" onAction="#onModelInfoMenuItemClick" text="Model Info">
                 <accelerator>
                     <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="I"/>
@@ -34,12 +42,6 @@
                 <accelerator>
                     <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="N"/>
                 </accelerator>
-<!--            </MenuItem>-->
-<!--            <SeparatorMenuItem/>-->
-<!--            <MenuItem mnemonicParsing="false" onAction="#onResetModelMenuItemClick" text="Reset Model">-->
-<!--                <accelerator>-->
-<!--                    <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="R"/>-->
-<!--                </accelerator>-->
             </MenuItem>
         </Menu>
 
@@ -64,12 +66,13 @@
                     <KeyCodeCombination alt="UP" control="UP" meta="UP" shift="UP" shortcut="UP" code="RIGHT"/>
                 </accelerator>
             </MenuItem>
-            <MenuItem mnemonicParsing="false" onAction="#handleCameraUp" text="Up">
+            <SeparatorMenuItem/>
+            <MenuItem mnemonicParsing="false" onAction="#handleCameraUp" text="Up (W)">
                 <accelerator>
                     <KeyCodeCombination alt="UP" control="UP" meta="UP" shift="UP" shortcut="UP" code="W"/>
                 </accelerator>
             </MenuItem>
-            <MenuItem mnemonicParsing="false" onAction="#handleCameraDown" text="Down">
+            <MenuItem mnemonicParsing="false" onAction="#handleCameraDown" text="Down (S)">
                 <accelerator>
                     <KeyCodeCombination alt="UP" control="UP" meta="UP" shift="UP" shortcut="UP" code="S"/>
                 </accelerator>
@@ -77,5 +80,11 @@
         </Menu>
     </MenuBar>
 
-    <Canvas fx:id="canvas" width="1600" height="870" AnchorPane.topAnchor="30.0"/>
+    <Canvas fx:id="canvas"
+            width="1600"
+            height="870"
+            AnchorPane.topAnchor="30.0"
+            AnchorPane.bottomAnchor="0.0"
+            AnchorPane.leftAnchor="0.0"
+            AnchorPane.rightAnchor="0.0"/>
 </AnchorPane>

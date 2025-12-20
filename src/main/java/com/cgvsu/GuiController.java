@@ -167,6 +167,25 @@ public class GuiController {
         showModelInfo();
     }
 
+    @FXML
+    private void onOpenTextureMenuItemClick(){
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.getExtensionFilters().add(
+          new FileChooser.ExtensionFilter("Images", "*.png", "*.jpg", "*.bmp")
+        );
+        fileChooser.setTitle("Load Texture");
+
+        File file = fileChooser.showOpenDialog((Stage) canvas.getScene().getWindow());
+        if (file!=null){
+            try{
+                this.texture = new Image(file.toURI().toString());
+            }
+            catch (Exception e){
+                showError("ОШибка загрузки текстуры", e.getMessage());
+            }
+        }
+    }
+
     private void showModelInfo() {
         if (mesh == null) {
             showInfo("Информация о модели", "Модель не загружена");
