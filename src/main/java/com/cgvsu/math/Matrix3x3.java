@@ -15,6 +15,7 @@ public class Matrix3x3 {
         for (int i = 0; i < 3; i++) {
             System.arraycopy(values[i], 0, this.matrix[i], 0, 3);
         }
+
     }
 
     public Matrix3x3(float a11, float a12, float a13,
