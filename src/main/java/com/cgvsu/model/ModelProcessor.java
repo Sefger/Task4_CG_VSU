@@ -82,7 +82,7 @@ public class ModelProcessor {
 
             for (int idx : vIdx) {
                 Vector3f n = normals.get(idx);
-                n.x += normal.x; n.y += normal.y; n.z += normal.z;
+                n.add(normal);
             }
             poly.setNormalIndices(vIdx.clone());
         }

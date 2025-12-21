@@ -27,8 +27,10 @@ public class Vector3f {
     public float getZ() { return z; }
 
     // сложение векторов
-    public Vector3f add(Vector3f other) {
-        return new Vector3f(x + other.x, y + other.y, z + other.z);
+    public void add(Vector3f other) {
+        x += other.x;
+        y += other.y;
+        z += other.z;
     }
 
     // вычитание векторов
