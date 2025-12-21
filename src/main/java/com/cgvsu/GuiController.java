@@ -38,10 +38,12 @@ public class GuiController {
     private Model mesh = null;
     Image texture = null;
     private Camera camera = new Camera(
-            new Vector3f(0, 00, 100),
-            new Vector3f(0, 0, 0),
-            1.0F, 1, 0.01F, 100);
-
+            new Vector3f(0, 0, 15),     // Позиция: 15 единиц от центра
+            new Vector3f(0, 0, 0),      // Смотрим в центр
+            60.0F,                      // FOV 60 градусов (а не 1.0)
+            1.0F,                       // Aspect (обновится автоматически)
+            0.1F,                       // Near plane
+            1000.0F);
     private Timeline timeline;
 
     @FXML

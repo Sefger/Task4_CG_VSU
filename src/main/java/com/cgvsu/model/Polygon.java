@@ -1,54 +1,84 @@
 package com.cgvsu.model;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 
 public class Polygon {
 
-    private ArrayList<Integer> vertexIndices;
-    private ArrayList<Integer> textureVertexIndices;
-    private ArrayList<Integer> normalIndices;
+    // Используем примитивные массивы для экономии памяти в 4-6 раз
+    private int[] vertexIndices;
+    private int[] textureVertexIndices;
+    private int[] normalIndices;
 
     public Polygon() {
-        vertexIndices = new ArrayList<Integer>();
-        textureVertexIndices = new ArrayList<Integer>();
-        normalIndices = new ArrayList<Integer>();
+        this.vertexIndices = new int[0];
+        this.textureVertexIndices = new int[0];
+        this.normalIndices = new int[0];
     }
 
-    public void setVertexIndices(ArrayList<Integer> vertexIndices) {
-        assert vertexIndices.size() >= 3;
+    /**
+     * Конструктор с инициализацией размера.
+     * Позволяет избежать лишних переаллокаций памяти.
+     */
+    public Polygon(int size) {
+        this.vertexIndices = new int[size];
+        this.textureVertexIndices = new int[size];
+        this.normalIndices = new int[size];
+    }
+
+    // --- Сеттеры с использованием примитивных массивов ---
+
+    public void setVertexIndices(int[] vertexIndices) {
+        assert vertexIndices.length >= 3;
         this.vertexIndices = vertexIndices;
     }
 
-    public void setTextureVertexIndices(ArrayList<Integer> textureVertexIndices) {
-        assert textureVertexIndices.size() >= 3;
+    public void setTextureVertexIndices(int[] textureVertexIndices) {
         this.textureVertexIndices = textureVertexIndices;
     }
 
-    public void setNormalIndices(ArrayList<Integer> normalIndices) {
-        assert normalIndices.size() >= 3;
+    public void setNormalIndices(int[] normalIndices) {
         this.normalIndices = normalIndices;
     }
 
-    public ArrayList<Integer> getVertexIndices() {
+    // --- Геттеры ---
+
+    public int[] getVertexIndices() {
         return vertexIndices;
     }
 
-    public ArrayList<Integer> getTextureVertexIndices() {
+    public int[] getTextureVertexIndices() {
         return textureVertexIndices;
     }
 
-    public ArrayList<Integer> getNormalIndices() {
+    public int[] getNormalIndices() {
         return normalIndices;
     }
 
-    protected void addVertexIndices(Integer idx){
-        this.vertexIndices.add(idx);
+    /**
+     * Возвращает количество вершин в полигоне (N)
+     */
+    public int getIndicesCount() {
+        return vertexIndices.length;
     }
 
-    protected void addTextureVertexIndices(Integer idx){
-        this.textureVertexIndices.add(idx);
-    }
-    protected void addNormalIndices(Integer idx){
-        this.normalIndices.add(idx);
+    /**
+     * Быстрое глубокое копирование полигона через системное копирование массивов
+     */
+    public Polygon copy() {
+        Polygon newPolygon = new Polygon(this.vertexIndices.length);
+
+        System.arraycopy(this.vertexIndices, 0, newPolygon.vertexIndices, 0, this.vertexIndices.length);
+
+        if (this.textureVertexIndices.length > 0) {
+            newPolygon.textureVertexIndices = new int[this.textureVertexIndices.length];
+            System.arraycopy(this.textureVertexIndices, 0, newPolygon.textureVertexIndices, 0, this.textureVertexIndices.length);
+        }
+
+        if (this.normalIndices.length > 0) {
+            newPolygon.normalIndices = new int[this.normalIndices.length];
+            System.arraycopy(this.normalIndices, 0, newPolygon.normalIndices, 0, this.normalIndices.length);
+        }
+
+        return newPolygon;
     }
 }
