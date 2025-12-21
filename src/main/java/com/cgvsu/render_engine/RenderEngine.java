@@ -1,10 +1,12 @@
 package com.cgvsu.render_engine;
 
+import com.cgvsu.math.Vector2f;
+import com.cgvsu.math.Vector3f;
+import com.cgvsu.math.Matrix4x4;
 import com.cgvsu.model.Model;
 import com.cgvsu.model.Polygon;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
-import javax.vecmath.*;
 import java.util.Arrays;
 
 public class RenderEngine {
@@ -25,17 +27,14 @@ public class RenderEngine {
         }
         Arrays.fill(zBuffer, Float.POSITIVE_INFINITY);
 
-        Matrix4f mvp = new Matrix4f();
-        mvp.setIdentity();
-        mvp.mul(camera.getProjectionMatrix());
-        mvp.mul(camera.getViewMatrix());
+        Matrix4x4 viewMatrix = camera.getViewMatrix();
+        Matrix4x4 projectionMatrix = camera.getProjectionMatrix();
+        Matrix4x4 mvp = projectionMatrix.multiply(viewMatrix);
 
-        Vector3f lightDir = new Vector3f();
-        lightDir.sub(camera.getPosition(), camera.getTarget());
-        lightDir.normalize();
+        Vector3f lightDir = camera.getPosition().subtract(camera.getTarget());
+        lightDir = lightDir.normalized();
 
-        Vector3f vVec = new Vector3f();
-        Vector3f transV = new Vector3f();
+        Vector3f transV;
         float[] sx = new float[3], sy = new float[3], sz = new float[3];
 
         for (Polygon poly : mesh.getPolygons()) {
@@ -54,9 +53,8 @@ public class RenderEngine {
 
                 boolean skipTriangle = false;
                 for (int j = 0; j < 3; j++) {
-                    com.cgvsu.math.Vector3f v = mesh.getVertices().get(triV[j]);
-                    vVec.set(v.x, v.y, v.z);
-                    GraphicConveyor.multiplyMatrix4ByVector3(mvp, vVec, transV);
+                    Vector3f v = mesh.getVertices().get(triV[j]);
+                    transV = GraphicConveyor.multiplyMatrix4ByVector3(mvp, v);
 
                     // Отсечение по ближней и дальней плоскости
                     if (transV.z < -1 || transV.z > 1) { skipTriangle = true; break; }
@@ -74,7 +72,7 @@ public class RenderEngine {
 
                 GraphicConveyor.rasterizeTriangle(
                         gc.getPixelWriter(), zBuffer, width, height,
-                        new Point2f(sx[0], sy[0]), new Point2f(sx[1], sy[1]), new Point2f(sx[2], sy[2]),
+                        new Vector2f(sx[0], sy[0]), new Vector2f(sx[1], sy[1]), new Vector2f(sx[2], sy[2]),
                         sz[0], sz[1], sz[2],
                         triV, triT, mesh, lightDir, texture
                 );

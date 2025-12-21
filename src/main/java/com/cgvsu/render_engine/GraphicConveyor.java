@@ -1,74 +1,69 @@
 package com.cgvsu.render_engine;
 
 import com.cgvsu.math.Vector2f;
+import com.cgvsu.math.Vector3f;
+import com.cgvsu.math.Matrix4x4;
 import com.cgvsu.model.Model;
 import javafx.scene.image.Image;
 import javafx.scene.image.PixelWriter;
-import javax.vecmath.*;
 import java.util.List;
 
 public class GraphicConveyor {
 
-    private static final Vector3f tempNormal = new Vector3f();
-
-    public static Matrix4f rotateScaleTranslate() {
-        Matrix4f m = new Matrix4f();
-        m.setIdentity();
-        return m;
+    public static Matrix4x4 rotateScaleTranslate() {
+        return Matrix4x4.identity();
     }
 
-    public static Matrix4f lookAt(Vector3f eye, Vector3f target) {
+    public static Matrix4x4 lookAt(Vector3f eye, Vector3f target) {
         return lookAt(eye, target, new Vector3f(0F, 1.0F, 0F));
     }
 
-    public static Matrix4f lookAt(Vector3f eye, Vector3f target, Vector3f up) {
-        Vector3f zAxis = new Vector3f();
-        zAxis.sub(eye, target);
-        zAxis.normalize();
-        Vector3f xAxis = new Vector3f();
-        xAxis.cross(up, zAxis);
-        xAxis.normalize();
-        Vector3f yAxis = new Vector3f();
-        yAxis.cross(zAxis, xAxis);
-        yAxis.normalize();
+    public static Matrix4x4 lookAt(Vector3f eye, Vector3f target, Vector3f up) {
+        Vector3f zAxis = eye.subtract(target);
+        zAxis = zAxis.normalized();
 
-        Matrix4f m = new Matrix4f();
-        m.setIdentity();
-        m.m00 = xAxis.x; m.m01 = xAxis.y; m.m02 = xAxis.z; m.m03 = -xAxis.dot(eye);
-        m.m10 = yAxis.x; m.m11 = yAxis.y; m.m12 = yAxis.z; m.m13 = -yAxis.dot(eye);
-        m.m20 = zAxis.x; m.m21 = zAxis.y; m.m22 = zAxis.z; m.m23 = -zAxis.dot(eye);
-        return m;
+        Vector3f xAxis = up.cross(zAxis);
+        xAxis = xAxis.normalized();
+
+        Vector3f yAxis = zAxis.cross(xAxis);
+        yAxis = yAxis.normalized();
+
+        return new Matrix4x4(
+                xAxis.x, xAxis.y, xAxis.z, -xAxis.dot(eye),
+                yAxis.x, yAxis.y, yAxis.z, -yAxis.dot(eye),
+                zAxis.x, zAxis.y, zAxis.z, -zAxis.dot(eye),
+                0, 0, 0, 1
+        );
     }
 
-    public static Matrix4f perspective(float fov, float aspectRatio, float nearPlane, float farPlane) {
-        Matrix4f result = new Matrix4f();
+    public static Matrix4x4 perspective(float fov, float aspectRatio, float nearPlane, float farPlane) {
         float fovRadians = (float) Math.toRadians(fov);
         float tangent = (float) (Math.tan(fovRadians * 0.5F));
-        result.m00 = 1.0F / (tangent * aspectRatio);
-        result.m11 = 1.0F / tangent;
-        result.m22 = -(farPlane + nearPlane) / (farPlane - nearPlane);
-        result.m23 = -(2 * farPlane * nearPlane) / (farPlane - nearPlane);
-        result.m32 = -1.0F;
-        result.m33 = 0;
-        return result;
+
+        return new Matrix4x4(
+                1.0F / (tangent * aspectRatio), 0, 0, 0,
+                0, 1.0F / tangent, 0, 0,
+                0, 0, -(farPlane + nearPlane) / (farPlane - nearPlane), -(2 * farPlane * nearPlane) / (farPlane - nearPlane),
+                0, 0, -1.0F, 0
+        );
     }
 
-    public static void multiplyMatrix4ByVector3(final Matrix4f m, final Vector3f v, Vector3f res) {
-        float x = m.m00 * v.x + m.m01 * v.y + m.m02 * v.z + m.m03;
-        float y = m.m10 * v.x + m.m11 * v.y + m.m12 * v.z + m.m13;
-        float z = m.m20 * v.x + m.m21 * v.y + m.m22 * v.z + m.m23;
-        float w = m.m30 * v.x + m.m31 * v.y + m.m32 * v.z + m.m33;
+    public static Vector3f multiplyMatrix4ByVector3(final Matrix4x4 m, final Vector3f v) {
+        float x = m.get(0, 0) * v.x + m.get(0, 1) * v.y + m.get(0, 2) * v.z + m.get(0, 3);
+        float y = m.get(1, 0) * v.x + m.get(1, 1) * v.y + m.get(1, 2) * v.z + m.get(1, 3);
+        float z = m.get(2, 0) * v.x + m.get(2, 1) * v.y + m.get(2, 2) * v.z + m.get(2, 3);
+        float w = m.get(3, 0) * v.x + m.get(3, 1) * v.y + m.get(3, 2) * v.z + m.get(3, 3);
 
         if (Math.abs(w) > 0.0001f) {
-            res.x = x / w; res.y = y / w; res.z = z / w;
+            return new Vector3f(x / w, y / w, z / w);
         } else {
-            res.set(x, y, 0);
+            return new Vector3f(x, y, 0);
         }
     }
 
     public static void rasterizeTriangle(
             final PixelWriter pw, float[] zBuffer, int width, int height,
-            Point2f p1, Point2f p2, Point2f p3,
+            Vector2f p1, Vector2f p2, Vector2f p3,
             float z1, float z2, float z3,
             int[] triV, int[] triT, Model mesh, Vector3f lightDir, Image texture) {
 
@@ -87,12 +82,12 @@ public class GraphicConveyor {
         if (Math.abs(det) < 0.000001f) return;
         float invDet = 1.0f / det;
 
-        // Освещение в вершинах (используем геометрические индексы triV)
+        // Освещение в вершинах
         float i1 = calculateVertexIntensity(triV[0], mesh, lightDir);
         float i2 = calculateVertexIntensity(triV[1], mesh, lightDir);
         float i3 = calculateVertexIntensity(triV[2], mesh, lightDir);
 
-        // Текстурные координаты (используем текстурные индексы triT)
+        // Текстурные координаты
         Vector2f uv1 = getUV(triT != null ? triT[0] : -1, mesh);
         Vector2f uv2 = getUV(triT != null ? triT[1] : -1, mesh);
         Vector2f uv3 = getUV(triT != null ? triT[2] : -1, mesh);
@@ -151,13 +146,13 @@ public class GraphicConveyor {
     }
 
     private static float calculateVertexIntensity(int vertexIdx, Model mesh, Vector3f lightDir) {
-        List<com.cgvsu.math.Vector3f> normals = mesh.getNormals();
+        List<Vector3f> normals = mesh.getNormals();
         if (normals.isEmpty() || vertexIdx >= normals.size()) return 0.6f;
 
-        com.cgvsu.math.Vector3f n = normals.get(vertexIdx);
-        tempNormal.set(n.x, n.y, n.z);
-        tempNormal.normalize();
-        return Math.max(0.2f, tempNormal.dot(lightDir));
+        Vector3f n = normals.get(vertexIdx);
+        Vector3f normalized = n.normalized();
+        float dot = normalized.dot(lightDir);
+        return Math.max(0.2f, dot);
     }
 
     private static int applyIntensity(int color, float intensity) {

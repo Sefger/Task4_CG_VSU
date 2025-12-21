@@ -75,25 +75,23 @@ public class ModelProcessor {
             Vector3f v2 = vertices.get(vIdx[1]);
             Vector3f v3 = vertices.get(vIdx[2]);
 
-            float ax = v2.x - v1.x; float ay = v2.y - v1.y; float az = v2.z - v1.z;
-            float bx = v3.x - v1.x; float by = v3.y - v1.y; float bz = v3.z - v1.z;
+            Vector3f e1 = v2.subtract(v1);
+            Vector3f e2 = v3.subtract(v1);
 
-            float nx = ay * bz - az * by;
-            float ny = az * bx - ax * bz;
-            float nz = ax * by - ay * bx;
+            Vector3f normal = e1.cross(e2);
 
             for (int idx : vIdx) {
                 Vector3f n = normals.get(idx);
-                n.x += nx; n.y += ny; n.z += nz;
+                n.add(normal);
             }
             poly.setNormalIndices(vIdx.clone());
         }
 
         for (Vector3f n : normals) {
-            float len = (float) Math.sqrt(n.x * n.x + n.y * n.y + n.z * n.z);
-            if (len > 1e-6f) {
-                n.x /= len; n.y /= len; n.z /= len;
-            }
+            Vector3f normalized = n.normalized();
+            n.x = normalized.x;
+            n.y = normalized.y;
+            n.z = normalized.z;
         }
     }
 
