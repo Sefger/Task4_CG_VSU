@@ -1,12 +1,15 @@
 package com.cgvsu.render_engine;
 
+import com.cgvsu.math.Vector2f;
 import com.cgvsu.model.Model;
-import com.cgvsu.model.Polygon;
 import javafx.scene.image.Image;
 import javafx.scene.image.PixelWriter;
 import javax.vecmath.*;
+import java.util.List;
 
 public class GraphicConveyor {
+
+    private static final Vector3f tempNormal = new Vector3f();
 
     public static Matrix4f rotateScaleTranslate() {
         Matrix4f m = new Matrix4f();
@@ -19,152 +22,151 @@ public class GraphicConveyor {
     }
 
     public static Matrix4f lookAt(Vector3f eye, Vector3f target, Vector3f up) {
-        Vector3f resultZ = new Vector3f();
-        resultZ.sub(target, eye);
-        resultZ.normalize();
-
-        Vector3f resultX = new Vector3f();
-        resultX.cross(up, resultZ);
-        resultX.normalize();
-
-        Vector3f resultY = new Vector3f();
-        resultY.cross(resultZ, resultX);
+        Vector3f zAxis = new Vector3f();
+        zAxis.sub(eye, target);
+        zAxis.normalize();
+        Vector3f xAxis = new Vector3f();
+        xAxis.cross(up, zAxis);
+        xAxis.normalize();
+        Vector3f yAxis = new Vector3f();
+        yAxis.cross(zAxis, xAxis);
+        yAxis.normalize();
 
         Matrix4f m = new Matrix4f();
-        m.m00 = resultX.x; m.m01 = resultY.x; m.m02 = resultZ.x; m.m03 = 0;
-        m.m10 = resultX.y; m.m11 = resultY.y; m.m12 = resultZ.y; m.m13 = 0;
-        m.m20 = resultX.z; m.m21 = resultY.z; m.m22 = resultZ.z; m.m23 = 0;
-        m.m30 = -resultX.dot(eye);
-        m.m31 = -resultY.dot(eye);
-        m.m32 = -resultZ.dot(eye);
-        m.m33 = 1;
+        m.setIdentity();
+        m.m00 = xAxis.x; m.m01 = xAxis.y; m.m02 = xAxis.z; m.m03 = -xAxis.dot(eye);
+        m.m10 = yAxis.x; m.m11 = yAxis.y; m.m12 = yAxis.z; m.m13 = -yAxis.dot(eye);
+        m.m20 = zAxis.x; m.m21 = zAxis.y; m.m22 = zAxis.z; m.m23 = -zAxis.dot(eye);
         return m;
     }
 
     public static Matrix4f perspective(float fov, float aspectRatio, float nearPlane, float farPlane) {
         Matrix4f result = new Matrix4f();
-        float tangent = (float) (Math.tan(fov * 0.5F));
+        float fovRadians = (float) Math.toRadians(fov);
+        float tangent = (float) (Math.tan(fovRadians * 0.5F));
         result.m00 = 1.0F / (tangent * aspectRatio);
         result.m11 = 1.0F / tangent;
-        result.m22 = (farPlane + nearPlane) / (farPlane - nearPlane);
-        result.m23 = 1.0F;
-        result.m32 = 2 * (nearPlane * farPlane) / (nearPlane - farPlane);
+        result.m22 = -(farPlane + nearPlane) / (farPlane - nearPlane);
+        result.m23 = -(2 * farPlane * nearPlane) / (farPlane - nearPlane);
+        result.m32 = -1.0F;
+        result.m33 = 0;
         return result;
     }
 
-    public static Vector3f multiplyMatrix4ByVector3(final Matrix4f matrix, final Vector3f vertex) {
-        float x = (vertex.x * matrix.m00) + (vertex.y * matrix.m10) + (vertex.z * matrix.m20) + matrix.m30;
-        float y = (vertex.x * matrix.m01) + (vertex.y * matrix.m11) + (vertex.z * matrix.m21) + matrix.m31;
-        float z = (vertex.x * matrix.m02) + (vertex.y * matrix.m12) + (vertex.z * matrix.m22) + matrix.m32;
-        float w = (vertex.x * matrix.m03) + (vertex.y * matrix.m13) + (vertex.z * matrix.m23) + matrix.m33;
-        return new Vector3f(x / w, y / w, z / w);
-    }
+    public static void multiplyMatrix4ByVector3(final Matrix4f m, final Vector3f v, Vector3f res) {
+        float x = m.m00 * v.x + m.m01 * v.y + m.m02 * v.z + m.m03;
+        float y = m.m10 * v.x + m.m11 * v.y + m.m12 * v.z + m.m13;
+        float z = m.m20 * v.x + m.m21 * v.y + m.m22 * v.z + m.m23;
+        float w = m.m30 * v.x + m.m31 * v.y + m.m32 * v.z + m.m33;
 
-    public static Point2f vertexToPoint(final Vector3f vertex, final int width, final int height) {
-        return new Point2f(vertex.x * width + width / 2.0F, -vertex.y * height + height / 2.0F);
-    }
-
-    // ИСПРАВЛЕННЫЙ МЕТОД
-    public static float[] getBarycentric(float x, float y, Point2f p1, Point2f p2, Point2f p3) {
-        float det = (p2.y - p3.y) * (p1.x - p3.x) + (p3.x - p2.x) * (p1.y - p3.y);
-        if (Math.abs(det) < 0.00001f) return new float[]{-1, -1, -1};
-
-        float alpha = ((p2.y - p3.y) * (x - p3.x) + (p3.x - p2.x) * (y - p3.y)) / det;
-        float beta = ((p3.y - p1.y) * (x - p3.x) + (p1.x - p3.x) * (y - p3.y)) / det;
-        float gamma = 1.0f - alpha - beta;
-        return new float[]{alpha, beta, gamma};
+        if (Math.abs(w) > 0.0001f) {
+            res.x = x / w; res.y = y / w; res.z = z / w;
+        } else {
+            res.set(x, y, 0);
+        }
     }
 
     public static void rasterizeTriangle(
             final PixelWriter pw, float[] zBuffer, int width, int height,
             Point2f p1, Point2f p2, Point2f p3,
             float z1, float z2, float z3,
-            Polygon poly, Model mesh, Image texture, Vector3f lightDir) {
+            int[] triV, int[] triT, Model mesh, Vector3f lightDir, Image texture) {
 
         int minX = (int) Math.max(0, Math.min(p1.x, Math.min(p2.x, p3.x)));
         int maxX = (int) Math.min(width - 1, Math.max(p1.x, Math.max(p2.x, p3.x)));
         int minY = (int) Math.max(0, Math.min(p1.y, Math.min(p2.y, p3.y)));
         int maxY = (int) Math.min(height - 1, Math.max(p1.y, Math.max(p2.y, p3.y)));
 
+        if (minX > maxX || minY > maxY) return;
+
+        float y2y3 = p2.y - p3.y;
+        float x3x2 = p3.x - p2.x;
+        float y3y1 = p3.y - p1.y;
+        float x1x3 = p1.x - p3.x;
+        float det = y2y3 * x1x3 + x3x2 * (p1.y - p3.y);
+        if (Math.abs(det) < 0.000001f) return;
+        float invDet = 1.0f / det;
+
+        // Освещение в вершинах (используем геометрические индексы triV)
+        float i1 = calculateVertexIntensity(triV[0], mesh, lightDir);
+        float i2 = calculateVertexIntensity(triV[1], mesh, lightDir);
+        float i3 = calculateVertexIntensity(triV[2], mesh, lightDir);
+
+        // Текстурные координаты (используем текстурные индексы triT)
+        Vector2f uv1 = getUV(triT != null ? triT[0] : -1, mesh);
+        Vector2f uv2 = getUV(triT != null ? triT[1] : -1, mesh);
+        Vector2f uv3 = getUV(triT != null ? triT[2] : -1, mesh);
+
         for (int y = minY; y <= maxY; y++) {
+            float y_p3y = y - p3.y;
+            int rowOffset = y * width;
             for (int x = minX; x <= maxX; x++) {
-                float[] bary = getBarycentric(x, y, p1, p2, p3);
-                if (bary[0] >= 0 && bary[1] >= 0 && bary[2] >= 0) {
-                    float currentZ = bary[0] * z1 + bary[1] * z2 + bary[2] * z3;
-                    if (currentZ < zBuffer[y * width + x]) {
-                        zBuffer[y * width + x] = currentZ;
-                        int color = calculatePixelColor(bary[0], bary[1], bary[2], poly, mesh, texture, lightDir);
-                        pw.setArgb(x, y, color);
+                float x_p3x = x - p3.x;
+                float alpha = (y2y3 * x_p3x + x3x2 * y_p3y) * invDet;
+                float beta = (y3y1 * x_p3x + x1x3 * y_p3y) * invDet;
+                float gamma = 1.0f - alpha - beta;
+
+                if (alpha >= 0 && beta >= 0 && gamma >= 0) {
+                    float currentZ = alpha * z1 + beta * z2 + gamma * z3;
+                    int idx = rowOffset + x;
+
+                    if (currentZ < zBuffer[idx]) {
+                        zBuffer[idx] = currentZ;
+
+                        int color = 0x4287f5;
+                        if (texture != null && triT != null) {
+                            float u = alpha * uv1.x + beta * uv2.x + gamma * uv3.x;
+                            float v = alpha * uv1.y + beta * uv2.y + gamma * uv3.y;
+                            color = sampleTexture(texture, u, v);
+                        }
+
+                        float intensity = alpha * i1 + beta * i2 + gamma * i3;
+                        pw.setArgb(x, y, applyIntensity(color, intensity));
                     }
                 }
             }
         }
     }
 
-    public static int calculatePixelColor(
-            float a, float b, float c,
-            Polygon poly, Model mesh,
-            Image texture, Vector3f lightDir) {
-
-        int baseColor;
-
-        // 1. Проверяем наличие текстуры и UV-координат
-        if (texture != null && !poly.getTextureVertexIndices().isEmpty()) {
-            var texVerts = mesh.getTextureVertices();
-            var indices = poly.getTextureVertexIndices();
-
-            float u = a * texVerts.get(indices.get(0)).x + b * texVerts.get(indices.get(1)).x + c * texVerts.get(indices.get(2)).x;
-            float v = a * texVerts.get(indices.get(0)).y + b * texVerts.get(indices.get(1)).y + c * texVerts.get(indices.get(2)).y;
-
-            int tx = (int) (u * (texture.getWidth() - 1));
-            int ty = (int) ((1 - v) * (texture.getHeight() - 1));
-
-            // Защита от выхода за границы
-            tx = Math.max(0, Math.min((int)texture.getWidth() - 1, tx));
-            ty = Math.max(0, Math.min((int)texture.getHeight() - 1, ty));
-
-            baseColor = texture.getPixelReader().getArgb(tx, ty);
-        } else {
-            // ЦВЕТ ПО УМОЛЧАНИЮ (Синий: 0xFF0000FF в формате ARGB)
-            baseColor = 0xFF4287f5; // Приятный небесно-синий
+    private static Vector2f getUV(int textureIdx, Model mesh) {
+        List<Vector2f> uvs = mesh.getTextureVertices();
+        if (textureIdx < 0 || uvs.isEmpty() || textureIdx >= uvs.size()) {
+            return new Vector2f(0, 0);
         }
-
-        // 2. Освещение (Phong Shading с интерполяцией нормалей)
-        float intensity = 0.5f; // Значение по умолчанию
-        if (!poly.getNormalIndices().isEmpty()) {
-            var normals = mesh.getNormals();
-            var nIdx = poly.getNormalIndices();
-
-            Vector3f n = new Vector3f();
-            n.x = a * normals.get(nIdx.get(0)).x + b * normals.get(nIdx.get(1)).x + c * normals.get(nIdx.get(2)).x;
-            n.y = a * normals.get(nIdx.get(0)).y + b * normals.get(nIdx.get(1)).y + c * normals.get(nIdx.get(2)).y;
-            n.z = a * normals.get(nIdx.get(0)).z + b * normals.get(nIdx.get(1)).z + c * normals.get(nIdx.get(2)).z;
-            n.normalize();
-
-            // Привязка света к камере (lightDir уже нормализован в RenderEngine)
-            intensity = Math.max(0.1f, n.dot(lightDir));
-        }
-
-        return applyLighting(baseColor, intensity);
+        return uvs.get(textureIdx);
     }
-    private static int applyLighting(int argb, float intensity) {
-        // Извлекаем каналы: Альфа, Красный, Зеленый, Синий
-        int a = (argb >> 24) & 0xFF;
-        int r = (argb >> 16) & 0xFF;
-        int g = (argb >> 8) & 0xFF;
-        int b = argb & 0xFF;
 
-        // Умножаем каналы на интенсивность (от 0.1 до 1.0)
-        r = (int) (r * intensity);
-        g = (int) (g * intensity);
-        b = (int) (b * intensity);
+    private static int sampleTexture(Image tex, float u, float v) {
+        int tw = (int) tex.getWidth();
+        int th = (int) tex.getHeight();
 
-        // Гарантируем, что значения остаются в диапазоне 0-255
-        r = Math.max(0, Math.min(255, r));
-        g = Math.max(0, Math.min(255, g));
-        b = Math.max(0, Math.min(255, b));
+        // Масштабируем UV к размерам изображения
+        int tx = (int) (u * (tw - 1)) % tw;
+        int ty = (int) ((1 - v) * (th - 1)) % th; // Инверсия V для формата OBJ
 
-        // Собираем всё обратно в одно 32-битное число
-        return (a << 24) | (r << 16) | (g << 8) | b;
+        if (tx < 0) tx += tw;
+        if (ty < 0) ty += th;
+
+        return tex.getPixelReader().getArgb(tx, ty);
+    }
+
+    private static float calculateVertexIntensity(int vertexIdx, Model mesh, Vector3f lightDir) {
+        List<com.cgvsu.math.Vector3f> normals = mesh.getNormals();
+        if (normals.isEmpty() || vertexIdx >= normals.size()) return 0.6f;
+
+        com.cgvsu.math.Vector3f n = normals.get(vertexIdx);
+        tempNormal.set(n.x, n.y, n.z);
+        tempNormal.normalize();
+        return Math.max(0.2f, tempNormal.dot(lightDir));
+    }
+
+    private static int applyIntensity(int color, float intensity) {
+        int r = (int) (((color >> 16) & 0xFF) * intensity);
+        int g = (int) (((color >> 8) & 0xFF) * intensity);
+        int b = (int) ((color & 0xFF) * intensity);
+        r = Math.min(255, Math.max(0, r));
+        g = Math.min(255, Math.max(0, g));
+        b = Math.min(255, Math.max(0, b));
+        return (255 << 24) | (r << 16) | (g << 8) | b;
     }
 }

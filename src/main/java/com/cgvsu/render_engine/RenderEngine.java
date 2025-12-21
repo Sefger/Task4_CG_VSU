@@ -4,85 +4,81 @@ import com.cgvsu.model.Model;
 import com.cgvsu.model.Polygon;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
-import javafx.scene.image.PixelWriter;
-
 import javax.vecmath.*;
-import java.util.ArrayList;
 import java.util.Arrays;
 
-import static com.cgvsu.render_engine.GraphicConveyor.*;
-
 public class RenderEngine {
-    // ОШИБКА ИСПРАВЛЕНА: zBuffer должен быть массивом
     private static float[] zBuffer;
-    private static int lastWidth = -1;
-    private static int lastHeight = -1;
+    private static int lastW = -1, lastH = -1;
 
     public static void render(
-            final GraphicsContext graphicsContext,
+            final GraphicsContext gc,
             final Camera camera,
             final Model mesh,
             final int width,
             final int height,
-            final Image texture)
-    {
-        // ОПТИМИЗАЦИЯ: Пересоздаем zBuffer только при изменении размера окна
-        if (zBuffer == null || width != lastWidth || height != lastHeight) {
+            final Image texture) {
+
+        if (zBuffer == null || width != lastW || height != lastH) {
             zBuffer = new float[width * height];
-            lastWidth = width;
-            lastHeight = height;
+            lastW = width; lastH = height;
         }
         Arrays.fill(zBuffer, Float.POSITIVE_INFINITY);
 
-        // 1. Подготовка матриц
-        Matrix4f modelMatrix = rotateScaleTranslate();
-        Matrix4f viewMatrix = camera.getViewMatrix();
-        Matrix4f projectionMatrix = camera.getProjectionMatrix();
+        Matrix4f mvp = new Matrix4f();
+        mvp.setIdentity();
+        mvp.mul(camera.getProjectionMatrix());
+        mvp.mul(camera.getViewMatrix());
 
-        Matrix4f modelViewProjectionMatrix = new Matrix4f(modelMatrix);
-        modelViewProjectionMatrix.mul(viewMatrix);
-        modelViewProjectionMatrix.mul(projectionMatrix);
-
-        // 2. Подготовка освещения
         Vector3f lightDir = new Vector3f();
         lightDir.sub(camera.getPosition(), camera.getTarget());
         lightDir.normalize();
 
-        PixelWriter pw = graphicsContext.getPixelWriter();
+        Vector3f vVec = new Vector3f();
+        Vector3f transV = new Vector3f();
+        float[] sx = new float[3], sy = new float[3], sz = new float[3];
 
-        // 3. Проход по полигонам
-        for (Polygon polygon : mesh.getPolygons()) {
-            if (polygon.getVertexIndices().size() < 3) continue;
+        for (Polygon poly : mesh.getPolygons()) {
+            int[] vIdx = poly.getVertexIndices();
+            int[] tIdx = poly.getTextureVertexIndices();
 
-            // ОПТИМИЗАЦИЯ: Избегаем создания лишних ArrayList внутри цикла
-            // Для треугольника нам всегда нужно ровно 3 точки
-            Point2f[] screenPoints = new Point2f[3];
-            float[] zCoords = new float[3];
+            // Проходим по полигону, разбивая его на треугольники (Triangle Fan)
+            for (int i = 1; i < vIdx.length - 1; i++) {
+                int[] triV = {vIdx[0], vIdx[i], vIdx[i + 1]};
 
-            for (int i = 0; i < 3; i++) {
-                int vertexIdx = polygon.getVertexIndices().get(i);
-                com.cgvsu.math.Vector3f v = mesh.getVertices().get(vertexIdx);
+                // Извлекаем соответствующие текстурные индексы, если они есть
+                int[] triT = null;
+                if (tIdx != null && tIdx.length >= vIdx.length) {
+                    triT = new int[]{tIdx[0], tIdx[i], tIdx[i + 1]};
+                }
 
-                // Трансформация и проекция
-                Vector3f vertexVecmath = new Vector3f(v.x, v.y, v.z);
-                Vector3f transformedV = multiplyMatrix4ByVector3(modelViewProjectionMatrix, vertexVecmath);
+                boolean skipTriangle = false;
+                for (int j = 0; j < 3; j++) {
+                    com.cgvsu.math.Vector3f v = mesh.getVertices().get(triV[j]);
+                    vVec.set(v.x, v.y, v.z);
+                    GraphicConveyor.multiplyMatrix4ByVector3(mvp, vVec, transV);
 
-                screenPoints[i] = vertexToPoint(transformedV, width, height);
-                zCoords[i] = transformedV.z;
+                    // Отсечение по ближней и дальней плоскости
+                    if (transV.z < -1 || transV.z > 1) { skipTriangle = true; break; }
+
+                    sx[j] = (transV.x + 1) * width * 0.5f;
+                    sy[j] = (1 - transV.y) * height * 0.5f;
+                    sz[j] = transV.z;
+                }
+
+                if (skipTriangle) continue;
+
+                // Back-face culling (удаление невидимых граней)
+                float area = (sx[1] - sx[0]) * (sy[2] - sy[0]) - (sy[1] - sy[0]) * (sx[2] - sx[0]);
+                if (area > 0) continue;
+
+                GraphicConveyor.rasterizeTriangle(
+                        gc.getPixelWriter(), zBuffer, width, height,
+                        new Point2f(sx[0], sy[0]), new Point2f(sx[1], sy[1]), new Point2f(sx[2], sy[2]),
+                        sz[0], sz[1], sz[2],
+                        triV, triT, mesh, lightDir, texture
+                );
             }
-
-            // 4. Растеризация
-            rasterizeTriangle(
-                    pw,
-                    zBuffer,
-                    width, height,
-                    screenPoints[0], screenPoints[1], screenPoints[2],
-                    zCoords[0], zCoords[1], zCoords[2],
-                    polygon,
-                    mesh,
-                    texture,
-                    lightDir
-            );
         }
     }
 }
