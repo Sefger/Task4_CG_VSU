@@ -9,6 +9,7 @@ import javafx.animation.Timeline;
 import javafx.event.ActionEvent;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.Alert;
+import javafx.scene.control.CheckMenuItem;
 import javafx.scene.image.Image;
 import javafx.scene.layout.AnchorPane;
 import javafx.stage.Stage;
@@ -35,6 +36,10 @@ public class GuiController {
 
     @FXML
     private Canvas canvas;
+
+    @FXML private CheckMenuItem drawGridCheck;
+    @FXML private CheckMenuItem useTextureCheck;
+    @FXML private CheckMenuItem useLightingCheck;
 
     private Model mesh = null;
     Image texture = null;
@@ -63,7 +68,17 @@ public class GuiController {
             camera.setAspectRatio((float) (width / height));
 
             if (mesh != null) {
-                RenderEngine.render(canvas.getGraphicsContext2D(), camera, mesh, (int) width, (int) height, texture);
+                RenderEngine.render(
+                        canvas.getGraphicsContext2D(),
+                        camera,
+                        mesh,
+                        (int) width,
+                        (int) height,
+                        texture,
+                        drawGridCheck.isSelected(),   // Передаем состояние сетки
+                        useTextureCheck.isSelected(),  // Передаем состояние текстуры
+                        useLightingCheck.isSelected()  // Передаем состояние света
+                );
             }
         });
 

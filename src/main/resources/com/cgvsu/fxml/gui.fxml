@@ -8,6 +8,7 @@
 <?import javafx.scene.canvas.Canvas?>
 <?import javafx.scene.control.SeparatorMenuItem?>
 
+<?import javafx.scene.control.CheckMenuItem?>
 <AnchorPane fx:id="anchorPane" xmlns:fx="http://javafx.com/fxml" fx:controller="com.cgvsu.GuiController">
     <MenuBar AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
         <Menu mnemonicParsing="false" text="File">
@@ -77,6 +78,11 @@
                     <KeyCodeCombination alt="UP" control="UP" meta="UP" shift="UP" shortcut="UP" code="S"/>
                 </accelerator>
             </MenuItem>
+        </Menu>
+        <Menu mnemonicParsing="false" text="Render Options">
+            <CheckMenuItem fx:id="drawGridCheck" mnemonicParsing="false" text="Рисовать полигональную сетку" />
+            <CheckMenuItem fx:id="useTextureCheck" mnemonicParsing="false" text="Использовать текстуру" />
+            <CheckMenuItem fx:id="useLightingCheck" mnemonicParsing="false" text="Использовать освещение" />
         </Menu>
     </MenuBar>
 
