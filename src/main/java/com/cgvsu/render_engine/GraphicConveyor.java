@@ -65,7 +65,8 @@ public class GraphicConveyor {
             final PixelWriter pw, float[] zBuffer, int width, int height,
             Vector2f p1, Vector2f p2, Vector2f p3,
             float z1, float z2, float z3,
-            int[] triV, int[] triT, Model mesh, Vector3f lightDir, Image texture) {
+            int[] triV, int[] triT, Model mesh, Vector3f lightDir,
+            Image texture, boolean useLighting) { // Добавлен флаг useLighting
 
         int minX = (int) Math.max(0, Math.min(p1.x, Math.min(p2.x, p3.x)));
         int maxX = (int) Math.min(width - 1, Math.max(p1.x, Math.max(p2.x, p3.x)));
@@ -82,15 +83,18 @@ public class GraphicConveyor {
         if (Math.abs(det) < 0.000001f) return;
         float invDet = 1.0f / det;
 
-        // Освещение в вершинах
-        float i1 = calculateVertexIntensity(triV[0], mesh, lightDir);
-        float i2 = calculateVertexIntensity(triV[1], mesh, lightDir);
-        float i3 = calculateVertexIntensity(triV[2], mesh, lightDir);
+        // Освещение в вершинах: если выключено, ставим 1.0 (максимальная яркость)
+        float i1 = useLighting ? calculateVertexIntensity(triV[0], mesh, lightDir) : 1.0f;
+        float i2 = useLighting ? calculateVertexIntensity(triV[1], mesh, lightDir) : 1.0f;
+        float i3 = useLighting ? calculateVertexIntensity(triV[2], mesh, lightDir) : 1.0f;
 
-        // Текстурные координаты
-        Vector2f uv1 = getUV(triT != null ? triT[0] : -1, mesh);
-        Vector2f uv2 = getUV(triT != null ? triT[1] : -1, mesh);
-        Vector2f uv3 = getUV(triT != null ? triT[2] : -1, mesh);
+        // Текстурные координаты (извлекаем только если есть текстура)
+        Vector2f uv1 = null, uv2 = null, uv3 = null;
+        if (texture != null && triT != null) {
+            uv1 = getUV(triT[0], mesh);
+            uv2 = getUV(triT[1], mesh);
+            uv3 = getUV(triT[2], mesh);
+        }
 
         for (int y = minY; y <= maxY; y++) {
             float y_p3y = y - p3.y;
@@ -108,15 +112,21 @@ public class GraphicConveyor {
                     if (currentZ < zBuffer[idx]) {
                         zBuffer[idx] = currentZ;
 
+                        // Определяем базовый цвет (текстура или константа)
                         int color = 0x4287f5;
-                        if (texture != null && triT != null) {
+                        if (texture != null && uv1 != null) {
                             float u = alpha * uv1.x + beta * uv2.x + gamma * uv3.x;
                             float v = alpha * uv1.y + beta * uv2.y + gamma * uv3.y;
                             color = sampleTexture(texture, u, v);
                         }
 
-                        float intensity = alpha * i1 + beta * i2 + gamma * i3;
-                        pw.setArgb(x, y, applyIntensity(color, intensity));
+                        // Применяем интерполированную интенсивность
+                        if (useLighting) {
+                            float intensity = alpha * i1 + beta * i2 + gamma * i3;
+                            pw.setArgb(x, y, applyIntensity(color, intensity));
+                        } else {
+                            pw.setArgb(x, y, color);
+                        }
                     }
                 }
             }
