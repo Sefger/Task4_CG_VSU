@@ -7,8 +7,8 @@
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.canvas.Canvas?>
 <?import javafx.scene.control.SeparatorMenuItem?>
-
 <?import javafx.scene.control.CheckMenuItem?>
+
 <AnchorPane fx:id="anchorPane" xmlns:fx="http://javafx.com/fxml" fx:controller="com.cgvsu.GuiController">
     <MenuBar AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
         <Menu mnemonicParsing="false" text="File">
@@ -47,6 +47,24 @@
         </Menu>
 
         <Menu mnemonicParsing="false" text="Camera Options">
+            <MenuItem mnemonicParsing="false" onAction="#onAddCameraMenuItemClick" text="Add New Camera">
+                <accelerator>
+                    <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="N"/>
+                </accelerator>
+            </MenuItem>
+            <MenuItem mnemonicParsing="false" onAction="#onNextCameraMenuItemClick" text="Next Camera">
+                <accelerator>
+                    <KeyCodeCombination alt="UP" control="UP" meta="UP" shift="UP" shortcut="UP" code="TAB"/>
+                </accelerator>
+            </MenuItem>
+            <MenuItem mnemonicParsing="false" onAction="#onDeleteCameraMenuItemClick" text="Delete Current Camera">
+                <accelerator>
+                    <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="DELETE"/>
+                </accelerator>
+            </MenuItem>
+
+            <SeparatorMenuItem/>
+
             <MenuItem mnemonicParsing="false" onAction="#handleCameraForward" text="Forward">
                 <accelerator>
                     <KeyCodeCombination alt="UP" control="UP" meta="UP" shift="UP" shortcut="UP" code="UP"/>
@@ -79,6 +97,7 @@
                 </accelerator>
             </MenuItem>
         </Menu>
+
         <Menu mnemonicParsing="false" text="Render Options">
             <CheckMenuItem fx:id="drawGridCheck" mnemonicParsing="false" text="Рисовать полигональную сетку" />
             <CheckMenuItem fx:id="useTextureCheck" mnemonicParsing="false" text="Использовать текстуру" />
