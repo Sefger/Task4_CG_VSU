@@ -19,6 +19,7 @@ public class RenderEngine {
             final Model mesh,
             final int width,
             final int height,
+            final Matrix4x4 modelMatrix, // Добавлено: матрица трансформации объекта в пространстве
             final Image texture,
             boolean drawGrid,
             boolean useTexture,
@@ -34,7 +35,10 @@ public class RenderEngine {
         // 2. Подготовка матриц
         Matrix4x4 viewMatrix = camera.getViewMatrix();
         Matrix4x4 projectionMatrix = camera.getProjectionMatrix();
-        Matrix4x4 mvp = projectionMatrix.multiply(viewMatrix);
+
+        // Важно: Порядок умножения матриц для получения MVP:
+        // Вершина * Model * View * Projection
+        Matrix4x4 mvp = projectionMatrix.multiply(viewMatrix).multiply(modelMatrix);
 
         // Направление света (от камеры к цели)
         Vector3f lightDir = camera.getPosition().subtract(camera.getTarget()).normalized();
@@ -44,7 +48,6 @@ public class RenderEngine {
             int[] vIdx = poly.getVertexIndices();
             int[] tIdx = poly.getTextureVertexIndices();
 
-            // Триангуляция полигона (Triangle Fan)
             for (int i = 1; i < vIdx.length - 1; i++) {
                 int[] triV = {vIdx[0], vIdx[i], vIdx[i + 1]};
                 int[] triT = (tIdx != null && tIdx.length >= vIdx.length)
@@ -56,12 +59,12 @@ public class RenderEngine {
                 float[] sz = new float[3];
                 boolean skipTriangle = false;
 
-                // Трансформация вершин в экранные координаты
                 for (int j = 0; j < 3; j++) {
                     Vector3f v = mesh.getVertices().get(triV[j]);
+
+                    // Теперь вершина умножается на полную цепочку MVP
                     Vector3f transV = GraphicConveyor.multiplyMatrix4ByVector3(mvp, v);
 
-                    // Отсечение по глубине (NDC space)
                     if (transV.z < -1 || transV.z > 1) { skipTriangle = true; break; }
 
                     sx[j] = (transV.x + 1) * width * 0.5f;
@@ -71,12 +74,9 @@ public class RenderEngine {
 
                 if (skipTriangle) continue;
 
-                // Back-face culling: вычисляем ориентированную площадь треугольника на экране
                 float area = (sx[1] - sx[0]) * (sy[2] - sy[0]) - (sy[1] - sy[0]) * (sx[2] - sx[0]);
-                if (area > 0) continue; // Пропускаем, если грань смотрит "от нас"
+                if (area > 0) continue;
 
-                // 4. РЕЖИМ: ЗАПОЛНЕНИЕ (Растеризация)
-                // Рисуем, если включена текстура, свет или если сетка ВЫКЛЮЧЕНА (сплошной цвет)
                 if (useTexture || useLighting || !drawGrid) {
                     GraphicConveyor.rasterizeTriangle(
                             gc.getPixelWriter(), zBuffer, width, height,
@@ -88,7 +88,6 @@ public class RenderEngine {
                     );
                 }
 
-                // 5. РЕЖИМ: СЕТКА (Отрисовка линий)
                 if (drawGrid) {
                     gc.setStroke(javafx.scene.paint.Color.BLACK);
                     gc.setLineWidth(0.5);

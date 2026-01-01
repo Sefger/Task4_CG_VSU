@@ -174,4 +174,14 @@ public class GraphicConveyor {
         b = Math.min(255, Math.max(0, b));
         return (255 << 24) | (r << 16) | (g << 8) | b;
     }
+
+
+    public static Matrix4x4 translation(float x, float y, float z){
+        return new Matrix4x4(
+                1, 0,0,x,
+                0,1,0, y,
+                0,0,0,z,
+                0,0,0,1
+        );
+    }
 }
