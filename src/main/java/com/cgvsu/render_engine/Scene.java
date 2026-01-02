@@ -7,6 +7,7 @@ import java.util.List;
 public class Scene {
     private List<Model> models = new ArrayList<>();
     private List<Camera> cameras = new ArrayList<>();
+    private List<Light> lights = new ArrayList<>();
     private int activeCameraIndex = 0;
 
     public void addCamera(Camera camera) {
@@ -48,5 +49,9 @@ public class Scene {
         if (index >= 0 && index < cameras.size()) {
             activeCameraIndex = index;
         }
+    }
+
+    public List<Light> getLights() {
+        return lights;
     }
 }

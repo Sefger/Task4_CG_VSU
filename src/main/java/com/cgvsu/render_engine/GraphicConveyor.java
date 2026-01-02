@@ -6,9 +6,12 @@ import com.cgvsu.math.Matrix4x4;
 import com.cgvsu.model.Model;
 import javafx.scene.image.Image;
 import javafx.scene.image.PixelWriter;
+
 import java.util.List;
 
 public class GraphicConveyor {
+
+    private static final Vector3f lightDirScratch = new Vector3f(0,0,0);
 
     public static Matrix4x4 rotateScaleTranslate() {
         return Matrix4x4.identity();
@@ -65,8 +68,9 @@ public class GraphicConveyor {
             final PixelWriter pw, float[] zBuffer, int width, int height,
             Vector2f p1, Vector2f p2, Vector2f p3,
             float z1, float z2, float z3,
-            int[] triV, int[] triT, Model mesh, Vector3f lightDir,
-            Image texture, boolean useLighting) { // Добавлен флаг useLighting
+            int[] triV, int[] triT, Model mesh,
+            float[] vIntensities, // ИЗМЕНЕНО: массив интенсивностей для вершин
+            Image texture, boolean useLighting) {
 
         int minX = (int) Math.max(0, Math.min(p1.x, Math.min(p2.x, p3.x)));
         int maxX = (int) Math.min(width - 1, Math.max(p1.x, Math.max(p2.x, p3.x)));
@@ -83,12 +87,7 @@ public class GraphicConveyor {
         if (Math.abs(det) < 0.000001f) return;
         float invDet = 1.0f / det;
 
-        // Освещение в вершинах: если выключено, ставим 1.0 (максимальная яркость)
-        float i1 = useLighting ? calculateVertexIntensity(triV[0], mesh, lightDir) : 1.0f;
-        float i2 = useLighting ? calculateVertexIntensity(triV[1], mesh, lightDir) : 1.0f;
-        float i3 = useLighting ? calculateVertexIntensity(triV[2], mesh, lightDir) : 1.0f;
-
-        // Текстурные координаты (извлекаем только если есть текстура)
+        // Текстурные координаты
         Vector2f uv1 = null, uv2 = null, uv3 = null;
         if (texture != null && triT != null) {
             uv1 = getUV(triT[0], mesh);
@@ -112,17 +111,16 @@ public class GraphicConveyor {
                     if (currentZ < zBuffer[idx]) {
                         zBuffer[idx] = currentZ;
 
-                        // Определяем базовый цвет (текстура или константа)
-                        int color = 0x4287f5;
+                        int color = 0x4287f5; // Цвет по умолчанию
                         if (texture != null && uv1 != null) {
                             float u = alpha * uv1.x + beta * uv2.x + gamma * uv3.x;
                             float v = alpha * uv1.y + beta * uv2.y + gamma * uv3.y;
                             color = sampleTexture(texture, u, v);
                         }
 
-                        // Применяем интерполированную интенсивность
-                        if (useLighting) {
-                            float intensity = alpha * i1 + beta * i2 + gamma * i3;
+                        if (useLighting && vIntensities != null) {
+                            // Интерполяция освещения по барицентрическим координатам (Gouraud Shading)
+                            float intensity = alpha * vIntensities[0] + beta * vIntensities[1] + gamma * vIntensities[2];
                             pw.setArgb(x, y, applyIntensity(color, intensity));
                         } else {
                             pw.setArgb(x, y, color);
@@ -176,12 +174,46 @@ public class GraphicConveyor {
     }
 
 
-    public static Matrix4x4 translation(float x, float y, float z){
+    public static Matrix4x4 translation(float x, float y, float z) {
         return new Matrix4x4(
-                1, 0,0,x,
-                0,1,0, y,
-                0,0,0,z,
-                0,0,0,1
+                1, 0, 0, x,
+                0, 1, 0, y,
+                0, 0, 1, z,
+                0, 0, 0, 1
+        );
+    }
+
+
+    public static float calculateTotalLighting(
+            Vector3f vertexWorldPos,
+            Vector3f normal,
+            List<Light> lights) {
+
+        float totalIntensity = 0.1f;
+        float nx = normal.x;
+        float ny = normal.y;
+        float nz = normal.z;
+
+
+
+        for (Light light : lights) {
+            light.getDirectionTo(vertexWorldPos, lightDirScratch);
+            float dot = nx* lightDirScratch.x
+                    +ny *lightDirScratch.y
+                    +nz*lightDirScratch.z;
+
+            if(dot>0){
+                totalIntensity+=dot*light.getIntensity();
+            }
+        }
+        return Math.min(totalIntensity, 1.0f);
+    }
+    public static Matrix4x4 scale(float x, float y, float z) {
+        return new Matrix4x4(
+                x, 0, 0, 0,
+                0, y, 0, 0,
+                0, 0, z, 0,
+                0, 0, 0, 1
         );
     }
 }

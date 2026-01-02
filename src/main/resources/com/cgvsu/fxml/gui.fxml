@@ -1,13 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.MenuBar?>
-<?import javafx.scene.control.Menu?>
-<?import javafx.scene.control.MenuItem?>
-<?import javafx.scene.input.KeyCodeCombination?>
-<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
 <?import javafx.scene.canvas.Canvas?>
-<?import javafx.scene.control.SeparatorMenuItem?>
-<?import javafx.scene.control.CheckMenuItem?>
+<?import javafx.scene.input.KeyCodeCombination?>
 
 <AnchorPane fx:id="anchorPane" xmlns:fx="http://javafx.com/fxml" fx:controller="com.cgvsu.GuiController">
     <MenuBar AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
@@ -17,15 +13,12 @@
                     <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="O"/>
                 </accelerator>
             </MenuItem>
-
             <MenuItem mnemonicParsing="false" onAction="#onOpenTextureMenuItemClick" text="Load Texture">
                 <accelerator>
                     <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="K"/>
                 </accelerator>
             </MenuItem>
-
             <SeparatorMenuItem/>
-
             <MenuItem mnemonicParsing="false" onAction="#onModelInfoMenuItemClick" text="Model Info">
                 <accelerator>
                     <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="I"/>
@@ -44,6 +37,7 @@
                     <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="N"/>
                 </accelerator>
             </MenuItem>
+
         </Menu>
 
         <Menu mnemonicParsing="false" text="Camera Options">
@@ -65,27 +59,29 @@
 
             <SeparatorMenuItem/>
 
-            <MenuItem mnemonicParsing="false" onAction="#handleCameraForward" text="Forward">
+            <MenuItem mnemonicParsing="false" onAction="#handleCameraForward" text="Forward (Z-)">
                 <accelerator>
                     <KeyCodeCombination alt="UP" control="UP" meta="UP" shift="UP" shortcut="UP" code="UP"/>
                 </accelerator>
             </MenuItem>
-            <MenuItem mnemonicParsing="false" onAction="#handleCameraBackward" text="Backward">
+            <MenuItem mnemonicParsing="false" onAction="#handleCameraBackward" text="Backward (Z+)">
                 <accelerator>
                     <KeyCodeCombination alt="UP" control="UP" meta="UP" shift="UP" shortcut="UP" code="DOWN"/>
                 </accelerator>
             </MenuItem>
-            <MenuItem mnemonicParsing="false" onAction="#handleCameraLeft" text="Left">
+            <MenuItem mnemonicParsing="false" onAction="#handleCameraLeft" text="Left (X+)">
                 <accelerator>
                     <KeyCodeCombination alt="UP" control="UP" meta="UP" shift="UP" shortcut="UP" code="LEFT"/>
                 </accelerator>
             </MenuItem>
-            <MenuItem mnemonicParsing="false" onAction="#handleCameraRight" text="Right">
+            <MenuItem mnemonicParsing="false" onAction="#handleCameraRight" text="Right (X-)">
                 <accelerator>
                     <KeyCodeCombination alt="UP" control="UP" meta="UP" shift="UP" shortcut="UP" code="RIGHT"/>
                 </accelerator>
             </MenuItem>
+
             <SeparatorMenuItem/>
+
             <MenuItem mnemonicParsing="false" onAction="#handleCameraUp" text="Up (W)">
                 <accelerator>
                     <KeyCodeCombination alt="UP" control="UP" meta="UP" shift="UP" shortcut="UP" code="W"/>
@@ -97,11 +93,24 @@
                 </accelerator>
             </MenuItem>
         </Menu>
+        <Menu mnemonicParsing="false" text="Light Options">
+            <MenuItem mnemonicParsing="false" onAction="#onAddPointLightClick" text="Random Point Light" />
+            <MenuItem mnemonicParsing="false" onAction="#onAddLightAtCameraClick" text="Light at Camera Pos">
+                <accelerator>
+                    <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="P"/>
+                </accelerator>
+            </MenuItem>
+            <MenuItem mnemonicParsing="false" onAction="#onClearLightsClick" text="Clear All Lights" />
+        </Menu>
 
         <Menu mnemonicParsing="false" text="Render Options">
-            <CheckMenuItem fx:id="drawGridCheck" mnemonicParsing="false" text="Рисовать полигональную сетку" />
-            <CheckMenuItem fx:id="useTextureCheck" mnemonicParsing="false" text="Использовать текстуру" />
-            <CheckMenuItem fx:id="useLightingCheck" mnemonicParsing="false" text="Использовать освещение" />
+            <CheckMenuItem fx:id="drawGridCheck" mnemonicParsing="false" text="Draw Mesh Grid" />
+            <CheckMenuItem fx:id="useTextureCheck" mnemonicParsing="false" text="Use Texture" />
+            <CheckMenuItem fx:id="useLightingCheck" mnemonicParsing="false" text="Enable Lighting" selected="true">
+                <accelerator>
+                    <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="L"/>
+                </accelerator>
+            </CheckMenuItem>
         </Menu>
     </MenuBar>
 

@@ -116,6 +116,22 @@ public class Matrix4x4 {
         }
         return new Matrix4x4(result);
     }
+    // Добавьте это внутрь класса Matrix4x4
+    public static Matrix4x4 multiply(Matrix4x4 m1, Matrix4x4 m2) {
+        float[][] result = new float[4][4];
+        for (int i = 0; i < 4; i++) {
+            for (int j = 0; j < 4; j++) {
+                float sum = 0;
+                for (int k = 0; k < 4; k++) {
+                    sum += m1.get(i, k) * m2.get(k, j);
+                }
+                result[i][j] = sum;
+            }
+        }
+        return new Matrix4x4(result);
+    }
+
+
 
     // транспонирование матрицы
     public Matrix4x4 transpose() {
