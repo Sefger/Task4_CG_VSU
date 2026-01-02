@@ -6,10 +6,7 @@ import com.cgvsu.model.Model;
 import com.cgvsu.model.ModelProcessor;
 import com.cgvsu.model.Polygon;
 import com.cgvsu.objreader.ObjReader;
-import com.cgvsu.render_engine.Camera;
-import com.cgvsu.render_engine.GraphicConveyor;
-import com.cgvsu.render_engine.RenderEngine;
-import com.cgvsu.render_engine.Scene;
+import com.cgvsu.render_engine.*;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -40,84 +37,61 @@ public class GuiController {
     private Scene scene = new Scene();
     private Model mesh = null;
     private Image texture = null;
-    private Model cameraMarkerMesh = null; // Модель-маркер для неактивных камер
+    private Model cameraMarkerMesh = null;
 
     private Timeline timeline;
 
     @FXML
     private void initialize() {
-        // Автоматическое изменение размера холста
+        // 1. Привязка размеров
         anchorPane.prefWidthProperty().addListener((ov, oldValue, newValue) -> canvas.setWidth(newValue.doubleValue()));
         anchorPane.prefHeightProperty().addListener((ov, oldValue, newValue) -> canvas.setHeight(newValue.doubleValue()));
 
-        // 1. Создаем геометрию маркера камеры
+        // 2. Ресурсы
         this.cameraMarkerMesh = createCameraMarker();
 
-        // 2. Инициализируем камеру по умолчанию
+        // 3. Сцена по умолчанию
         scene.addCamera(new Camera(
-                new Vector3f(0, 0, 15),
+                new Vector3f(0, 5, 15),
                 new Vector3f(0, 0, 0),
                 60.0F, 1.0F, 0.1F, 1000.0F));
 
-        // 3. Цикл рендеринга
+        scene.getLights().add(new DirectionalLight(new Vector3f(-1, -1, -1), 0.5f));
+
+        // 4. Цикл отрисовки
         timeline = new Timeline();
         timeline.setCycleCount(Animation.INDEFINITE);
 
         KeyFrame frame = new KeyFrame(Duration.millis(15), event -> {
             double width = canvas.getWidth();
             double height = canvas.getHeight();
-            canvas.getGraphicsContext2D().clearRect(0, 0, width, height);
+            var gc = canvas.getGraphicsContext2D();
+            gc.clearRect(0, 0, width, height);
 
             Camera activeCamera = scene.getActiveCamera();
+            if (activeCamera == null) return;
             activeCamera.setAspectRatio((float) (width / height));
 
-            // Отрисовка основной модели
+            // 1. Отрисовка основной модели
             if (mesh != null) {
                 RenderEngine.render(
-                        canvas.getGraphicsContext2D(), activeCamera, mesh,
+                        gc, activeCamera, mesh,
                         (int) width, (int) height, Matrix4x4.identity(),
-                        texture, drawGridCheck.isSelected(),
+                        texture, scene.getLights(),
+                        drawGridCheck.isSelected(),
                         useTextureCheck.isSelected(), useLightingCheck.isSelected()
                 );
             }
 
-            // Отрисовка маркеров других камер на сцене
+            // 2. Отрисовка маркеров неактивных камер
             renderInactiveCameras(width, height);
+
+            // 3. ВАЖНО: Отрисовка маркеров источников света
+            renderLightMarkers(width, height);
         });
 
         timeline.getKeyFrames().add(frame);
         timeline.play();
-    }
-
-    /**
-     * Генерирует модель пирамиды.
-     * Вершина пирамиды находится в (0,0,0) — это точка расположения камеры.
-     */
-    private Model createCameraMarker() {
-        Model marker = new Model();
-        // Вершины
-        marker.getVertices().add(new Vector3f(0, 0, 0));             // 0: Позиция глаза
-        marker.getVertices().add(new Vector3f(-0.4f, -0.4f, 1.0f));  // 1: Лево-низ
-        marker.getVertices().add(new Vector3f(0.4f, -0.4f, 1.0f));   // 2: Право-низ
-        marker.getVertices().add(new Vector3f(0.4f, 0.4f, 1.0f));    // 3: Право-верх
-        marker.getVertices().add(new Vector3f(-0.4f, 0.4f, 1.0f));   // 4: Лево-верх
-
-        // Полигоны (используем ваш обновленный класс Polygon с int[])
-        marker.getPolygons().add(createSimplePolygon(0, 1, 2));
-        marker.getPolygons().add(createSimplePolygon(0, 2, 3));
-        marker.getPolygons().add(createSimplePolygon(0, 3, 4));
-        marker.getPolygons().add(createSimplePolygon(0, 4, 1));
-        // Основание (два треугольника)
-        marker.getPolygons().add(createSimplePolygon(1, 4, 3));
-        marker.getPolygons().add(createSimplePolygon(1, 3, 2));
-
-        return marker;
-    }
-
-    private Polygon createSimplePolygon(int... indices) {
-        Polygon p = new Polygon();
-        p.setVertexIndices(indices); // Передаем примитивный массив напрямую
-        return p;
     }
 
     private void renderInactiveCameras(double width, double height) {
@@ -128,20 +102,46 @@ public class GuiController {
             if (i == scene.getActiveCameraIndex()) continue;
 
             Camera cam = scene.getCameras().get(i);
-
-            // Трансформация: перемещаем пирамидку в координаты неактивной камеры
             Matrix4x4 modelMatrix = GraphicConveyor.translation(
                     cam.getPosition().x, cam.getPosition().y, cam.getPosition().z);
 
+            // Отрисовка пирамидки (без освещения и текстур, чтобы избежать ошибок индексов)
             RenderEngine.render(
                     canvas.getGraphicsContext2D(), activeCamera, cameraMarkerMesh,
                     (int) width, (int) height, modelMatrix,
-                    null, true, false, false // Рисуем только сетку (grid)
+                    null, null,
+                    true, false, false
             );
         }
     }
 
-    // --- Файловые операции ---
+    private Model createCameraMarker() {
+        Model marker = new Model();
+        marker.getVertices().add(new Vector3f(0, 0, 0));             // 0
+        marker.getVertices().add(new Vector3f(-0.5f, -0.5f, 1.2f));  // 1
+        marker.getVertices().add(new Vector3f(0.5f, -0.5f, 1.2f));   // 2
+        marker.getVertices().add(new Vector3f(0.5f, 0.5f, 1.2f));    // 3
+        marker.getVertices().add(new Vector3f(-0.5f, 0.5f, 1.2f));   // 4
+
+        marker.getPolygons().add(createSimplePolygon(0, 1, 2));
+        marker.getPolygons().add(createSimplePolygon(0, 2, 3));
+        marker.getPolygons().add(createSimplePolygon(0, 3, 4));
+        marker.getPolygons().add(createSimplePolygon(0, 4, 1));
+        marker.getPolygons().add(createSimplePolygon(1, 4, 3));
+        marker.getPolygons().add(createSimplePolygon(1, 3, 2));
+
+        // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: рассчитываем нормали для маркера
+        ModelProcessor.computeNormals(marker);
+        return marker;
+    }
+
+    private Polygon createSimplePolygon(int... indices) {
+        Polygon p = new Polygon();
+        p.setVertexIndices(indices);
+        return p;
+    }
+
+    // --- Файловые методы ---
 
     @FXML
     private void onOpenModelMenuItemClick() {
@@ -153,13 +153,18 @@ public class GuiController {
         try {
             String fileContent = Files.readString(file.toPath());
             mesh = ObjReader.read(fileContent);
+
+            // Авто-триангуляция и расчет нормалей для корректного света
+            ModelProcessor.triangulate(mesh);
+            ModelProcessor.computeNormals(mesh);
+
         } catch (Exception e) {
-            showError("Ошибка", "Ошибка при загрузке: " + e.getMessage());
+            showError("Ошибка загрузки", e.getMessage());
         }
     }
 
     @FXML private void onTriangulateModelMenuItemClick() {
-        if (mesh != null) mesh = ModelProcessor.triangulateWithEarClipping(mesh);
+        if (mesh != null) ModelProcessor.triangulate(mesh);
     }
 
     @FXML private void onComputeNormalsMenuItemClick() {
@@ -168,35 +173,48 @@ public class GuiController {
 
     @FXML private void onModelInfoMenuItemClick() {
         if (mesh == null) return;
-        showInfo("Модель", "Вершин: " + mesh.getVertices().size() + "\nПолигонов: " + mesh.getPolygons().size());
+        showInfo("Статистика", "Вершин: " + mesh.getVertices().size() + "\nПолигонов: " + mesh.getPolygons().size());
     }
 
-    // --- Управление сценой и камерами ---
+    // --- Камеры и движение ---
 
     @FXML
     public void onAddCameraMenuItemClick() {
-        Camera current = scene.getActiveCamera();
-        // Создаем новую камеру со смещением по оси X, чтобы увидеть маркер старой
+        Camera c = scene.getActiveCamera();
         scene.addCamera(new Camera(
-                new Vector3f(current.getPosition().x + 5, 2, 10),
-                new Vector3f(0, 0, 0),
-                60.0F, 1.0F, 0.1F, 1000.0F));
+                new Vector3f(c.getPosition().x + 3, c.getPosition().y, c.getPosition().z),
+                new Vector3f(0, 0, 0), 60.0F, 1.0F, 0.1F, 1000.0F));
     }
 
     @FXML
     public void onNextCameraMenuItemClick() {
         if (!scene.getCameras().isEmpty()) {
-            int next = (scene.getActiveCameraIndex() + 1) % scene.getCameras().size();
-            scene.setActiveCamera(next);
+            scene.setActiveCamera((scene.getActiveCameraIndex() + 1) % scene.getCameras().size());
         }
     }
 
     @FXML
     public void onDeleteCameraMenuItemClick() {
-        scene.removeCamera(scene.getActiveCameraIndex());
+        if (scene.getCameras().size() > 1) {
+            scene.removeCamera(scene.getActiveCameraIndex());
+        }
+    }
+    @FXML
+    private void onAddLightAtCameraClick() {
+        Camera activeCamera = scene.getActiveCamera();
+        if (activeCamera == null) return;
+
+        // Берем текущую позицию камеры в мире
+        Vector3f lightPos = new Vector3f(
+                activeCamera.getPosition().x,
+                activeCamera.getPosition().y,
+                activeCamera.getPosition().z
+        );
+
+        // Добавляем лампочку точно в эту точку
+        scene.getLights().add(new PointLight(lightPos, 0.8f));
     }
 
-    // Управление движением
     @FXML public void handleCameraForward() { scene.getActiveCamera().movePosition(new Vector3f(0, 0, -TRANSLATION)); }
     @FXML public void handleCameraBackward() { scene.getActiveCamera().movePosition(new Vector3f(0, 0, TRANSLATION)); }
     @FXML public void handleCameraLeft() { scene.getActiveCamera().movePosition(new Vector3f(TRANSLATION, 0, 0)); }
@@ -216,6 +234,51 @@ public class GuiController {
     }
 
     private void showError(String title, String msg) {
-        Alert a = new Alert(Alert.AlertType.ERROR); a.setTitle(title); a.setContentText(msg); a.show();
+        Alert a = new Alert(Alert.AlertType.ERROR); a.setTitle(title); a.setHeaderText(null); a.setContentText(msg); a.show();
+    }
+    @FXML
+    private void onAddPointLightClick() {
+        // Генерируем случайную позицию в районе центра сцены для наглядности
+        float x = (float) (Math.random() * 20 - 10);
+        float y = (float) (Math.random() * 10 + 2);
+        float z = (float) (Math.random() * 20 - 10);
+
+        // Добавляем новый точечный источник (белый свет)
+        scene.getLights().add(new PointLight(new Vector3f(x, y, z), 0.8f));
+
+        System.out.println("Added light at: " + x + ", " + y + ", " + z);
+    }
+
+    @FXML
+    private void onClearLightsClick() {
+        scene.getLights().clear();
+        // Добавим хотя бы один слабый источник по умолчанию, чтобы сцена не была черной
+        scene.getLights().add(new DirectionalLight(new Vector3f(-1, -1, -1), 0.3f));
+    }
+    private void renderLightMarkers(double width, double height) {
+        Camera activeCamera = scene.getActiveCamera();
+        if (activeCamera == null || scene.getLights().isEmpty()) return;
+
+        var gc = canvas.getGraphicsContext2D();
+
+        for (Light light : scene.getLights()) {
+            if (light instanceof PointLight pl) {
+                // Рисуем лампочки золотистым цветом
+                gc.setStroke(javafx.scene.paint.Color.GOLD);
+
+                // Матрица: Позиция света + уменьшение масштаба (чтобы отличить от камер)
+                Matrix4x4 modelMatrix = Matrix4x4.multiply(
+                        GraphicConveyor.translation(pl.getPosition().x, pl.getPosition().y, pl.getPosition().z),
+                        GraphicConveyor.scale(0.5f, 0.5f, 0.5f)
+                );
+
+                RenderEngine.render(
+                        gc, activeCamera, cameraMarkerMesh,
+                        (int) width, (int) height, modelMatrix,
+                        null, null, true, false, false
+                );
+                gc.setStroke(javafx.scene.paint.Color.BLACK); // Сброс цвета
+            }
+        }
     }
 }
