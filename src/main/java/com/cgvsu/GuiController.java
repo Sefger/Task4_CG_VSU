@@ -6,6 +6,7 @@ import com.cgvsu.model.Model;
 import com.cgvsu.model.ModelProcessor;
 import com.cgvsu.model.Polygon;
 import com.cgvsu.objreader.ObjReader;
+import com.cgvsu.objwriter.ObjWriter;
 import com.cgvsu.render_engine.*;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
@@ -21,6 +22,7 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 
 public class GuiController {
@@ -160,6 +162,56 @@ public class GuiController {
 
         } catch (Exception e) {
             showError("Ошибка загрузки", e.getMessage());
+        }
+    }
+
+    @FXML
+    private void onSaveModelMenuItemClick() {
+        if (mesh == null) {
+//            showWarning("Модель не загружена", "Сначала загрузите модель для сохранения");
+            return;
+        }
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Save Model As");
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("OBJ Files", "*.obj"),
+                new FileChooser.ExtensionFilter("All Files", "*.*")
+        );
+
+        // Предлагаем имя по умолчанию
+        fileChooser.setInitialFileName("model.obj");
+
+        // Устанавливаем начальную директорию
+        File initialDir = new File(System.getProperty("user.home") + File.separator + "Documents");
+        if (initialDir.exists() && initialDir.isDirectory()) {
+            fileChooser.setInitialDirectory(initialDir);
+        }
+
+        File file = fileChooser.showSaveDialog((Stage) canvas.getScene().getWindow());
+
+        if (file != null) {
+            try {
+                // Убедимся, что файл имеет расширение .obj
+                String filePath = file.getAbsolutePath();
+                if (!filePath.toLowerCase().endsWith(".obj")) {
+                    filePath += ".obj";
+                    file = new File(filePath);
+                }
+
+                // Сохраняем модель с помощью ObjWriter
+                ObjWriter.write(mesh, filePath);
+
+                showInfo("Сохранение завершено",
+                        "Модель успешно сохранена в файл:\n" + filePath);
+
+            } catch (IOException e) {
+                showError("Ошибка сохранения",
+                        "Не удалось сохранить файл:\n" + e.getMessage());
+            } catch (Exception e) {
+                showError("Ошибка данных",
+                        "Ошибка при сохранении модели:\n" + e.getMessage());
+            }
         }
     }
 
