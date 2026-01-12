@@ -18,6 +18,11 @@
                     <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="K"/>
                 </accelerator>
             </MenuItem>
+            <MenuItem mnemonicParsing="false" onAction="#onSaveModelMenuItemClick" text="Save Model">
+                <accelerator>
+                    <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="S"/>
+                </accelerator>
+            </MenuItem>
             <SeparatorMenuItem/>
             <MenuItem mnemonicParsing="false" onAction="#onModelInfoMenuItemClick" text="Model Info">
                 <accelerator>
