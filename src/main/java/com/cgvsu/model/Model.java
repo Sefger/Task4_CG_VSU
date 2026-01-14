@@ -2,6 +2,7 @@ package com.cgvsu.model;
 
 import com.cgvsu.math.Vector2f;
 import com.cgvsu.math.Vector3f;
+import com.cgvsu.math.Matrix4x4;
 
 import java.util.*;
 
@@ -11,6 +12,7 @@ public class Model {
     protected ArrayList<Vector2f> textureVertices = new ArrayList<>();
     protected ArrayList<Vector3f> normals = new ArrayList<>();
     protected ArrayList<Polygon> polygons = new ArrayList<>();
+    private Matrix4x4 modelMatrix = Matrix4x4.identity();
 
     public Model() {
     }
@@ -20,6 +22,12 @@ public class Model {
         this.textureVertices = new ArrayList<>(textureVert);
         this.normals = new ArrayList<>(normals);
         this.polygons = new ArrayList<>(polygons);
+    }
+    public Matrix4x4 getModelMatrix() {
+        return modelMatrix;
+    }
+    public void setModelMatrix(Matrix4x4 matrix) {
+        this.modelMatrix = matrix;
     }
 
     /**

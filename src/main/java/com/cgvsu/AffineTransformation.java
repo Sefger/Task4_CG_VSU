@@ -1,11 +1,11 @@
-package com.cgvsu.affinetransformation;
+package com.cgvsu;
 
 import com.cgvsu.math.Matrix4x4;
 
-public class TransformationMatrix {
+public class AffineTransformation {
 
     // матрица масштабирования
-    public static Matrix4x4 createScaleMatrix(float sx, float sy, float sz) {
+    public static Matrix4x4 scale(float sx, float sy, float sz) {
         return new Matrix4x4(
                 sx, 0, 0, 0,
                 0, sy, 0, 0,
@@ -15,7 +15,7 @@ public class TransformationMatrix {
     }
 
     // матрица поворота вокруг X
-    public static Matrix4x4 createRotationXMatrix(float angle) {
+    public static Matrix4x4 rotationX(float angle) {
         float cos = (float) Math.cos(angle);
         float sin = (float) Math.sin(angle);
 
@@ -28,7 +28,7 @@ public class TransformationMatrix {
     }
 
     // матрица поворота вокруг Y
-    public static Matrix4x4 createRotationYMatrix(float angle) {
+    public static Matrix4x4 rotationY(float angle) {
         float cos = (float) Math.cos(angle);
         float sin = (float) Math.sin(angle);
 
@@ -41,7 +41,7 @@ public class TransformationMatrix {
     }
 
     // поворот z
-    public static Matrix4x4 createRotationZMatrix(float angle) {
+    public static Matrix4x4 rotationZ(float angle) {
         float cos = (float) Math.cos(angle);
         float sin = (float) Math.sin(angle);
 
@@ -54,12 +54,37 @@ public class TransformationMatrix {
     }
 
     // матрица переноса
-    public static Matrix4x4 createTranslationMatrix(float tx, float ty, float tz) {
+    public static Matrix4x4 translation(float tx, float ty, float tz) {
         return new Matrix4x4(
                 1, 0, 0, tx,
                 0, 1, 0, ty,
                 0, 0, 1, tz,
                 0, 0, 0, 1
         );
+    }
+
+    public static Matrix4x4 combine(Matrix4x4... matrices) {
+        if (matrices.length == 0) {
+            return Matrix4x4.identity();
+        }
+
+        Matrix4x4 result = matrices[0];
+        for (int i = 1; i < matrices.length; i++) {
+            result = result.multiply(matrices[i]);
+        }
+        return result;
+    }
+
+    public static Matrix4x4 createModelMatrix(
+            float tx, float ty, float tz,
+            float rx, float ry, float rz,
+            float sx, float sy, float sz) {
+        Matrix4x4 scale = scale(sx, sy, sz);
+        Matrix4x4 rotateX = rotationX(rx);
+        Matrix4x4 rotateY = rotationX(ry);
+        Matrix4x4 rotateZ = rotationX(rz);
+        Matrix4x4 translate = translation(tx, ty, tz);
+
+        return combine(translate, rotateZ, rotateY, rotateX, scale);
     }
 }
