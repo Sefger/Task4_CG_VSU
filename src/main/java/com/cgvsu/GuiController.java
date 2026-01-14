@@ -357,36 +357,43 @@ public class GuiController {
 
     @FXML
     private void onApplyTranslation() {
-        if (mesh == null) return;
-        float tx = Float.parseFloat(translateX.getText());
-        float ty = Float.parseFloat(translateY.getText());
-        float tz = Float.parseFloat(translateZ.getText());
+        try {
+            if (mesh == null) return;
+            float tx = Float.parseFloat(translateX.getText());
+            float ty = Float.parseFloat(translateY.getText());
+            float tz = Float.parseFloat(translateZ.getText());
 
-        Matrix4x4 current = mesh.getModelMatrix();
-        Matrix4x4 translation = AffineTransformation.translation(tx, ty, tz);
-        mesh.setModelMatrix(translation.multiply(current));
+            Matrix4x4 current = mesh.getModelMatrix();
+            Matrix4x4 translation = AffineTransformation.translation(tx, ty, tz);
+            mesh.setModelMatrix(translation.multiply(current));
 
-        ModelProcessor.computeNormals(mesh);
+            ModelProcessor.computeNormals(mesh);
+        } catch (NumberFormatException e) {
+            showError("Invalid input", "Please enter valid numbers for translation");
+        }
     }
 
     @FXML
     private void onApplyRotation() {
-        if (mesh == null) return;
+        try {
+            if (mesh == null) return;
 
-        float rx = Float.parseFloat(rotateX.getText());
-        float ry = Float.parseFloat(rotateY.getText());
-        float rz = Float.parseFloat(rotateZ.getText());
+            float rx = Float.parseFloat(rotateX.getText());
+            float ry = Float.parseFloat(rotateY.getText());
+            float rz = Float.parseFloat(rotateZ.getText());
 
-        Matrix4x4 current = mesh.getModelMatrix();
-        Matrix4x4 rotationX = AffineTransformation.rotationX(rx);
-        Matrix4x4 rotationY = AffineTransformation.rotationY(ry);
-        Matrix4x4 rotationZ = AffineTransformation.rotationZ(rz);
+            Matrix4x4 current = mesh.getModelMatrix();
+            Matrix4x4 rotationX = AffineTransformation.rotationX(rx);
+            Matrix4x4 rotationY = AffineTransformation.rotationY(ry);
+            Matrix4x4 rotationZ = AffineTransformation.rotationZ(rz);
 
-        Matrix4x4 rotation = rotationZ.multiply(rotationY).multiply(rotationX);
-        mesh.setModelMatrix(rotation.multiply(current));
+            Matrix4x4 rotation = rotationZ.multiply(rotationY).multiply(rotationX);
+            mesh.setModelMatrix(rotation.multiply(current));
 
-        ModelProcessor.computeNormals(mesh);
-
+            ModelProcessor.computeNormals(mesh);
+        } catch (NumberFormatException e) {
+            showError("Invalid input", "Please enter valid numbers for translation");
+        }
     }
 
     @FXML
