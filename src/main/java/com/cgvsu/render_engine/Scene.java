@@ -6,6 +6,7 @@ import java.util.List;
 
 public class Scene {
     private List<Model> models = new ArrayList<>();
+    private int activeModelIndex = -1; // -1, если моделей нет
     private List<Camera> cameras = new ArrayList<>();
     private List<Light> lights = new ArrayList<>();
     private int activeCameraIndex = 0;
@@ -54,4 +55,46 @@ public class Scene {
     public List<Light> getLights() {
         return lights;
     }
+
+    public void addModel(Model model) {
+        models.add(model);
+        if (activeModelIndex == -1) activeModelIndex = 0;
+    }
+
+    public List<Model> getModels() {
+        return models;
+    }
+
+    public Model getActiveModel() {
+        if (activeModelIndex >= 0 && activeModelIndex < models.size()) {
+            return models.get(activeModelIndex);
+        }
+        return null;
+    }
+
+    public void setActiveModelIndex(int index){
+        if(index >= 0 && index < models.size()){
+            this.activeModelIndex = index;
+        }
+    }
+
+    public int getActiveModelIndex(){
+        return activeModelIndex;
+    }
+
+    public void removeModel(int index) {
+        if (index >= 0 && index < models.size()) {
+            models.remove(index);
+
+            // Корректируем индекс активной модели, чтобы он не указывал в пустоту
+            if (models.isEmpty()) {
+                activeModelIndex = -1;
+            } else if (activeModelIndex >= index) {
+                // Если удалили модель перед активной или саму активную,
+                // сдвигаем индекс назад
+                activeModelIndex = Math.max(0, activeModelIndex - 1);
+            }
+        }
+    }
+
 }
