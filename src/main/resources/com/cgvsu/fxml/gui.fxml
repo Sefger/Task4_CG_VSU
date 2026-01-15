@@ -121,6 +121,18 @@
                 </accelerator>
             </CheckMenuItem>
         </Menu>
+        <Menu mnemonicParsing="false" text="Model Selection">
+            <MenuItem mnemonicParsing="false" onAction="#onNextModelMenuItemClick" text="Next Model">
+                <accelerator>
+                    <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="RIGHT"/>
+                </accelerator>
+            </MenuItem>
+            <MenuItem mnemonicParsing="false" onAction="#onPrevModelMenuItemClick" text="Previous Model">
+                <accelerator>
+                    <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="LEFT"/>
+                </accelerator>
+            </MenuItem>
+        </Menu>
     </MenuBar>
 
     <Canvas fx:id="canvas"
@@ -135,7 +147,17 @@
           AnchorPane.topAnchor="30.0" AnchorPane.bottomAnchor="0.0" AnchorPane.rightAnchor="0.0"
           prefWidth="300" visible="false">
 
-        <Label text="Model Transform" style="-fx-font-size: 16; -fx-font-weight: bold;"/>
+        <Label text="Scene Content" style="-fx-font-size: 16; -fx-font-weight: bold;"/>
+
+        <VBox spacing="5">
+            <Label text="Loaded Models:"/>
+            <ListView fx:id="modelListView" prefHeight="150.0"/>
+            <Button text="Delete Selected Model" onAction="#onRemoveModelClick" prefWidth="280" style="-fx-background-color: #ffcccc;"/>
+        </VBox>
+
+        <Separator/>
+
+        <Label text="Active Model Transform" style="-fx-font-weight: bold;"/>
 
         <VBox spacing="5">
             <Label text="Translation"/>
@@ -188,6 +210,6 @@
             <Button text="Apply" onAction="#onApplyScale" prefWidth="70"/>
         </VBox>
 
-        <Button text="Hide Panel" onAction="#onHideTransformPanel" prefWidth="250"/>
+        <Button text="Hide Panel" onAction="#onHideTransformPanel" prefWidth="280"/>
     </VBox>
 </AnchorPane>

@@ -15,6 +15,7 @@ import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.Alert;
 import javafx.scene.control.CheckMenuItem;
+import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.layout.AnchorPane;
@@ -31,15 +32,24 @@ public class GuiController {
 
     private final float TRANSLATION = 0.5F;
 
-    @FXML AnchorPane anchorPane;
-    @FXML private Canvas canvas;
+    @FXML
+    AnchorPane anchorPane;
+    @FXML
+    private Canvas canvas;
 
-    @FXML private CheckMenuItem drawGridCheck;
-    @FXML private CheckMenuItem useTextureCheck;
-    @FXML private CheckMenuItem useLightingCheck;
+    @FXML
+    private CheckMenuItem drawGridCheck;
+    @FXML
+    private CheckMenuItem useTextureCheck;
+    @FXML
+    private CheckMenuItem useLightingCheck;
+
+    @FXML
+    private ListView<String> modelListView;
+    @FXML
+    private VBox transformPanel;
 
     private Scene scene = new Scene();
-    private Model mesh = null;
     private Image texture = null;
     private Model cameraMarkerMesh = null;
 
@@ -66,6 +76,21 @@ public class GuiController {
         timeline = new Timeline();
         timeline.setCycleCount(Animation.INDEFINITE);
 
+        // Слушатель выбора модели в списке
+        modelListView.getSelectionModel().selectedIndexProperty().addListener((obs, oldVal, newVal) -> {
+            int index = newVal.intValue();
+            scene.setActiveModelIndex(index);
+
+            // 1. Очищаем поля трансформации при переключении,
+            // чтобы случайно не применить старые значения к новому объекту
+            clearTransformFields();
+
+            // 2. (Опционально) Выводим в консоль для теста
+            if (index != -1) {
+                System.out.println("Выбрана модель: " + modelListView.getItems().get(index));
+            }
+        });
+
         KeyFrame frame = new KeyFrame(Duration.millis(15), event -> {
             double width = canvas.getWidth();
             double height = canvas.getHeight();
@@ -76,26 +101,39 @@ public class GuiController {
             if (activeCamera == null) return;
             activeCamera.setAspectRatio((float) (width / height));
 
-            // 1. Отрисовка основной модели
-            if (mesh != null) {
+            // 1. Отрисовка всех моделей
+            for (int i = 0; i < scene.getModels().size(); i++) {
+                Model m = scene.getModels().get(i);
+                boolean isActive = (i == scene.getActiveModelIndex());
+
+                Image textureToApply = isActive ? texture : null;
+
                 RenderEngine.render(
-                        gc, activeCamera, mesh,
-                        (int) width, (int) height, mesh.getModelMatrix(),
-                        texture, scene.getLights(),
-                        drawGridCheck.isSelected(),
+                        gc, activeCamera, m,
+                        (int) width, (int) height, m.getModelMatrix(),
+                        textureToApply, scene.getLights(),
+                        isActive || drawGridCheck.isSelected(), // Активная модель всегда подсвечена сеткой
                         useTextureCheck.isSelected(), useLightingCheck.isSelected()
                 );
             }
-
-            // 2. Отрисовка маркеров неактивных камер
             renderInactiveCameras(width, height);
-
-            // 3. ВАЖНО: Отрисовка маркеров источников света
             renderLightMarkers(width, height);
         });
 
         timeline.getKeyFrames().add(frame);
         timeline.play();
+    }
+
+    private void clearTransformFields() {
+        translateX.setText("0");
+        translateY.setText("0");
+        translateZ.setText("0");
+        rotateX.setText("0");
+        rotateY.setText("0");
+        rotateZ.setText("0");
+        scaleX.setText("1");
+        scaleY.setText("1");
+        scaleZ.setText("1");
     }
 
     private void renderInactiveCameras(double width, double height) {
@@ -156,17 +194,24 @@ public class GuiController {
 
         try {
             String fileContent = Files.readString(file.toPath());
-            mesh = ObjReader.read(fileContent);
+            Model newModel = ObjReader.read(fileContent);
 
-            // Авто-триангуляция и расчет нормалей для корректного света
-            ModelProcessor.triangulate(mesh);
-            ModelProcessor.computeNormals(mesh);
+            ModelProcessor.triangulate(newModel);
+            ModelProcessor.computeNormals(newModel);
 
-            if (mesh != null) {
-                if (mesh.getModelMatrix() == null) {
-                    mesh.setModelMatrix(Matrix4x4.identity());
-                }
-            }
+            // Смещение, чтобы модели не стояли в одной точке
+            float offsetX = scene.getModels().size() * 5.0f;
+            newModel.setModelMatrix(AffineTransformation.translation(offsetX, 0, 0));
+
+            // 1. Добавляем модель в логику (в Scene)
+            scene.addModel(newModel);
+
+            // 2. КРИТИЧЕСКИЙ МОМЕНТ: Добавляем строку в ListView
+            // Если этой строки нет, список останется пустым!
+            modelListView.getItems().add("Model " + scene.getModels().size() + ": " + file.getName());
+
+            // 3. Выделяем новую модель в списке
+            modelListView.getSelectionModel().selectLast();
 
         } catch (Exception e) {
             showError("Ошибка загрузки", e.getMessage());
@@ -174,9 +219,19 @@ public class GuiController {
     }
 
     @FXML
+    private void onRemoveModelClick() {
+        int index = scene.getActiveModelIndex();
+        if (index != -1) {
+            scene.removeModel(index);
+            modelListView.getItems().remove(index);
+        }
+    }
+
+    @FXML
     private void onSaveModelMenuItemClick() {
-        if (mesh == null) {
-//            showWarning("Модель не загружена", "Сначала загрузите модель для сохранения");
+        Model activeModel = scene.getActiveModel();
+        if (activeModel == null) {
+            showError("Модель не загружена", "Сначала загрузите модель для сохранения");
             return;
         }
 
@@ -208,7 +263,7 @@ public class GuiController {
                 }
 
                 // Сохраняем модель с помощью ObjWriter
-                ObjWriter.write(mesh, filePath);
+                ObjWriter.write(scene.getActiveModel(), filePath);
 
                 showInfo("Сохранение завершено",
                         "Модель успешно сохранена в файл:\n" + filePath);
@@ -223,17 +278,20 @@ public class GuiController {
         }
     }
 
-    @FXML private void onTriangulateModelMenuItemClick() {
-        if (mesh != null) ModelProcessor.triangulate(mesh);
+    @FXML
+    private void onTriangulateModelMenuItemClick() {
+        if (scene.getActiveModel() != null) ModelProcessor.triangulate(scene.getActiveModel());
     }
 
-    @FXML private void onComputeNormalsMenuItemClick() {
-        if (mesh != null) ModelProcessor.computeNormals(mesh);
+    @FXML
+    private void onComputeNormalsMenuItemClick() {
+        if (scene.getActiveModel() != null) ModelProcessor.computeNormals(scene.getActiveModel());
     }
 
-    @FXML private void onModelInfoMenuItemClick() {
-        if (mesh == null) return;
-        showInfo("Статистика", "Вершин: " + mesh.getVertices().size() + "\nПолигонов: " + mesh.getPolygons().size());
+    @FXML
+    private void onModelInfoMenuItemClick() {
+        if (scene.getActiveModel() == null) return;
+        showInfo("Статистика", "Вершин: " + scene.getActiveModel().getVertices().size() + "\nПолигонов: " + scene.getActiveModel().getPolygons().size());
     }
 
     // --- Камеры и движение ---
@@ -259,6 +317,7 @@ public class GuiController {
             scene.removeCamera(scene.getActiveCameraIndex());
         }
     }
+
     @FXML
     private void onAddLightAtCameraClick() {
         Camera activeCamera = scene.getActiveCamera();
@@ -275,12 +334,35 @@ public class GuiController {
         scene.getLights().add(new PointLight(lightPos, 0.8f));
     }
 
-    @FXML public void handleCameraForward() { scene.getActiveCamera().movePosition(new Vector3f(0, 0, -TRANSLATION)); }
-    @FXML public void handleCameraBackward() { scene.getActiveCamera().movePosition(new Vector3f(0, 0, TRANSLATION)); }
-    @FXML public void handleCameraLeft() { scene.getActiveCamera().movePosition(new Vector3f(TRANSLATION, 0, 0)); }
-    @FXML public void handleCameraRight() { scene.getActiveCamera().movePosition(new Vector3f(-TRANSLATION, 0, 0)); }
-    @FXML public void handleCameraUp() { scene.getActiveCamera().movePosition(new Vector3f(0, TRANSLATION, 0)); }
-    @FXML public void handleCameraDown() { scene.getActiveCamera().movePosition(new Vector3f(0, -TRANSLATION, 0)); }
+    @FXML
+    public void handleCameraForward() {
+        scene.getActiveCamera().movePosition(new Vector3f(0, 0, -TRANSLATION));
+    }
+
+    @FXML
+    public void handleCameraBackward() {
+        scene.getActiveCamera().movePosition(new Vector3f(0, 0, TRANSLATION));
+    }
+
+    @FXML
+    public void handleCameraLeft() {
+        scene.getActiveCamera().movePosition(new Vector3f(TRANSLATION, 0, 0));
+    }
+
+    @FXML
+    public void handleCameraRight() {
+        scene.getActiveCamera().movePosition(new Vector3f(-TRANSLATION, 0, 0));
+    }
+
+    @FXML
+    public void handleCameraUp() {
+        scene.getActiveCamera().movePosition(new Vector3f(0, TRANSLATION, 0));
+    }
+
+    @FXML
+    public void handleCameraDown() {
+        scene.getActiveCamera().movePosition(new Vector3f(0, -TRANSLATION, 0));
+    }
 
     @FXML
     private void onOpenTextureMenuItemClick() {
@@ -290,12 +372,21 @@ public class GuiController {
     }
 
     private void showInfo(String title, String msg) {
-        Alert a = new Alert(Alert.AlertType.INFORMATION); a.setTitle(title); a.setHeaderText(null); a.setContentText(msg); a.show();
+        Alert a = new Alert(Alert.AlertType.INFORMATION);
+        a.setTitle(title);
+        a.setHeaderText(null);
+        a.setContentText(msg);
+        a.show();
     }
 
     private void showError(String title, String msg) {
-        Alert a = new Alert(Alert.AlertType.ERROR); a.setTitle(title); a.setHeaderText(null); a.setContentText(msg); a.show();
+        Alert a = new Alert(Alert.AlertType.ERROR);
+        a.setTitle(title);
+        a.setHeaderText(null);
+        a.setContentText(msg);
+        a.show();
     }
+
     @FXML
     private void onAddPointLightClick() {
         // Генерируем случайную позицию в районе центра сцены для наглядности
@@ -315,6 +406,7 @@ public class GuiController {
         // Добавим хотя бы один слабый источник по умолчанию, чтобы сцена не была черной
         scene.getLights().add(new DirectionalLight(new Vector3f(-1, -1, -1), 0.3f));
     }
+
     private void renderLightMarkers(double width, double height) {
         Camera activeCamera = scene.getActiveCamera();
         if (activeCamera == null || scene.getLights().isEmpty()) return;
@@ -341,33 +433,42 @@ public class GuiController {
             }
         }
     }
-    @FXML private TextField translateX;
-    @FXML private TextField translateY;
-    @FXML private TextField translateZ;
 
-    @FXML private TextField rotateX;
-    @FXML private TextField rotateY;
-    @FXML private TextField rotateZ;
+    @FXML
+    private TextField translateX;
+    @FXML
+    private TextField translateY;
+    @FXML
+    private TextField translateZ;
 
-    @FXML private TextField scaleX;
-    @FXML private TextField scaleY;
-    @FXML private TextField scaleZ;
+    @FXML
+    private TextField rotateX;
+    @FXML
+    private TextField rotateY;
+    @FXML
+    private TextField rotateZ;
 
-    @FXML private VBox transformPanel;
+    @FXML
+    private TextField scaleX;
+    @FXML
+    private TextField scaleY;
+    @FXML
+    private TextField scaleZ;
+
 
     @FXML
     private void onApplyTranslation() {
         try {
-            if (mesh == null) return;
+            if (scene.getActiveModel() == null) return;
             float tx = Float.parseFloat(translateX.getText());
             float ty = Float.parseFloat(translateY.getText());
             float tz = Float.parseFloat(translateZ.getText());
 
-            Matrix4x4 current = mesh.getModelMatrix();
+            Matrix4x4 current = scene.getActiveModel().getModelMatrix();
             Matrix4x4 translation = AffineTransformation.translation(tx, ty, tz);
-            mesh.setModelMatrix(translation.multiply(current));
+            scene.getActiveModel().setModelMatrix(translation.multiply(current));
 
-            ModelProcessor.computeNormals(mesh);
+            ModelProcessor.computeNormals(scene.getActiveModel());
         } catch (NumberFormatException e) {
             showError("Invalid input", "Please enter valid numbers for translation");
         }
@@ -376,21 +477,21 @@ public class GuiController {
     @FXML
     private void onApplyRotation() {
         try {
-            if (mesh == null) return;
+            if (scene.getActiveModel() == null) return;
 
             float rx = Float.parseFloat(rotateX.getText());
             float ry = Float.parseFloat(rotateY.getText());
             float rz = Float.parseFloat(rotateZ.getText());
 
-            Matrix4x4 current = mesh.getModelMatrix();
+            Matrix4x4 current = scene.getActiveModel().getModelMatrix();
             Matrix4x4 rotationX = AffineTransformation.rotationX(rx);
             Matrix4x4 rotationY = AffineTransformation.rotationY(ry);
             Matrix4x4 rotationZ = AffineTransformation.rotationZ(rz);
 
             Matrix4x4 rotation = rotationZ.multiply(rotationY).multiply(rotationX);
-            mesh.setModelMatrix(rotation.multiply(current));
+            scene.getActiveModel().setModelMatrix(rotation.multiply(current));
 
-            ModelProcessor.computeNormals(mesh);
+            ModelProcessor.computeNormals(scene.getActiveModel());
         } catch (NumberFormatException e) {
             showError("Invalid input", "Please enter valid numbers for translation");
         }
@@ -399,19 +500,43 @@ public class GuiController {
     @FXML
     private void onApplyScale() {
         try {
-            if (mesh == null) return;
+            if (scene.getActiveModel() == null) return;
 
             float sx = Float.parseFloat(scaleX.getText());
             float sy = Float.parseFloat(scaleY.getText());
             float sz = Float.parseFloat(scaleZ.getText());
 
-            Matrix4x4 current = mesh.getModelMatrix();
+            Matrix4x4 current = scene.getActiveModel().getModelMatrix();
             Matrix4x4 scale = AffineTransformation.scale(sx, sy, sz);
-            mesh.setModelMatrix(scale.multiply(current));
+            scene.getActiveModel().setModelMatrix(scale.multiply(current));
 
-            ModelProcessor.computeNormals(mesh);
+            ModelProcessor.computeNormals(scene.getActiveModel());
         } catch (NumberFormatException e) {
             showError("Invalid input", "Please enter valid numbers for translation");
+        }
+    }
+
+    @FXML
+    public void onNextModelMenuItemClick() {
+        int size = scene.getModels().size();
+        if (size > 0) {
+            int currentIndex = scene.getActiveModelIndex();
+            int nextIndex = (currentIndex + 1) % size;
+
+            // Выделяем в визуальном списке (это автоматически вызовет слушатель и сменит индекс в сцене)
+            modelListView.getSelectionModel().select(nextIndex);
+        }
+    }
+
+    @FXML
+    public void onPrevModelMenuItemClick() {
+        int size = scene.getModels().size();
+        if (size > 0) {
+            int currentIndex = scene.getActiveModelIndex();
+            int prevIndex = (currentIndex - 1 + size) % size;
+
+            // Выделяем в визуальном списке
+            modelListView.getSelectionModel().select(prevIndex);
         }
     }
 
@@ -424,4 +549,5 @@ public class GuiController {
     private void onShowTransformPanel() {
         transformPanel.setVisible(true);
     }
+
 }
