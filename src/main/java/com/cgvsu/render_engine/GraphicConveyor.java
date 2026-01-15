@@ -13,10 +13,6 @@ public class GraphicConveyor {
 
     private static final Vector3f lightDirScratch = new Vector3f(0,0,0);
 
-    public static Matrix4x4 rotateScaleTranslate() {
-        return Matrix4x4.identity();
-    }
-
     public static Matrix4x4 lookAt(Vector3f eye, Vector3f target) {
         return lookAt(eye, target, new Vector3f(0F, 1.0F, 0F));
     }
@@ -173,17 +169,6 @@ public class GraphicConveyor {
         return (255 << 24) | (r << 16) | (g << 8) | b;
     }
 
-
-    public static Matrix4x4 translation(float x, float y, float z) {
-        return new Matrix4x4(
-                1, 0, 0, x,
-                0, 1, 0, y,
-                0, 0, 1, z,
-                0, 0, 0, 1
-        );
-    }
-
-
     public static float calculateTotalLighting(
             Vector3f vertexWorldPos,
             Vector3f normal,
@@ -207,13 +192,5 @@ public class GraphicConveyor {
             }
         }
         return Math.min(totalIntensity, 1.0f);
-    }
-    public static Matrix4x4 scale(float x, float y, float z) {
-        return new Matrix4x4(
-                x, 0, 0, 0,
-                0, y, 0, 0,
-                0, 0, z, 0,
-                0, 0, 0, 1
-        );
     }
 }

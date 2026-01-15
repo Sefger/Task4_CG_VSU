@@ -42,7 +42,11 @@
                     <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="N"/>
                 </accelerator>
             </MenuItem>
-
+            <MenuItem mnemonicParsing="false" onAction="#onShowTransformPanel" text="Show Transform Panel">
+                <accelerator>
+                    <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="T"/>
+                </accelerator>
+            </MenuItem>
         </Menu>
 
         <Menu mnemonicParsing="false" text="Camera Options">
@@ -126,4 +130,64 @@
             AnchorPane.bottomAnchor="0.0"
             AnchorPane.leftAnchor="0.0"
             AnchorPane.rightAnchor="0.0"/>
+
+    <VBox fx:id="transformPanel" spacing="10" style="-fx-background-color: #f0f0f0; -fx-padding: 10;"
+          AnchorPane.topAnchor="30.0" AnchorPane.bottomAnchor="0.0" AnchorPane.rightAnchor="0.0"
+          prefWidth="300" visible="false">
+
+        <Label text="Model Transform" style="-fx-font-size: 16; -fx-font-weight: bold;"/>
+
+        <VBox spacing="5">
+            <Label text="Translation"/>
+            <HBox spacing="5">
+                <Label text="X:" prefWidth="30"/>
+                <TextField fx:id="translateX" text="0" prefWidth="70"/>
+            </HBox>
+            <HBox spacing="5">
+                <Label text="Y:" prefWidth="30"/>
+                <TextField fx:id="translateY" text="0" prefWidth="70"/>
+            </HBox>
+            <HBox spacing="5">
+                <Label text="Z:" prefWidth="30"/>
+                <TextField fx:id="translateZ" text="0" prefWidth="70"/>
+            </HBox>
+            <Button text="Apply" onAction="#onApplyTranslation" prefWidth="70"/>
+        </VBox>
+
+        <VBox spacing="5">
+            <Label text="Rotation (degrees)"/>
+            <HBox spacing="5">
+                <Label text="X:" prefWidth="30"/>
+                <TextField fx:id="rotateX" text="0" prefWidth="70"/>
+            </HBox>
+            <HBox spacing="5">
+                <Label text="Y:" prefWidth="30"/>
+                <TextField fx:id="rotateY" text="0" prefWidth="70"/>
+            </HBox>
+            <HBox spacing="5">
+                <Label text="Z:" prefWidth="30"/>
+                <TextField fx:id="rotateZ" text="0" prefWidth="70"/>
+            </HBox>
+            <Button text="Apply" onAction="#onApplyRotation" prefWidth="70"/>
+        </VBox>
+
+        <VBox spacing="5">
+            <Label text="Scale"/>
+            <HBox spacing="5">
+                <Label text="X:" prefWidth="30"/>
+                <TextField fx:id="scaleX" text="1" prefWidth="70"/>
+            </HBox>
+            <HBox spacing="5">
+                <Label text="Y:" prefWidth="30"/>
+                <TextField fx:id="scaleY" text="1" prefWidth="70"/>
+            </HBox>
+            <HBox spacing="5">
+                <Label text="Z:" prefWidth="30"/>
+                <TextField fx:id="scaleZ" text="1" prefWidth="70"/>
+            </HBox>
+            <Button text="Apply" onAction="#onApplyScale" prefWidth="70"/>
+        </VBox>
+
+        <Button text="Hide Panel" onAction="#onHideTransformPanel" prefWidth="250"/>
+    </VBox>
 </AnchorPane>

@@ -15,8 +15,10 @@ import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.Alert;
 import javafx.scene.control.CheckMenuItem;
+import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -78,7 +80,7 @@ public class GuiController {
             if (mesh != null) {
                 RenderEngine.render(
                         gc, activeCamera, mesh,
-                        (int) width, (int) height, Matrix4x4.identity(),
+                        (int) width, (int) height, mesh.getModelMatrix(),
                         texture, scene.getLights(),
                         drawGridCheck.isSelected(),
                         useTextureCheck.isSelected(), useLightingCheck.isSelected()
@@ -104,7 +106,7 @@ public class GuiController {
             if (i == scene.getActiveCameraIndex()) continue;
 
             Camera cam = scene.getCameras().get(i);
-            Matrix4x4 modelMatrix = GraphicConveyor.translation(
+            Matrix4x4 modelMatrix = AffineTransformation.translation(
                     cam.getPosition().x, cam.getPosition().y, cam.getPosition().z);
 
             // Отрисовка пирамидки (без освещения и текстур, чтобы избежать ошибок индексов)
@@ -159,6 +161,12 @@ public class GuiController {
             // Авто-триангуляция и расчет нормалей для корректного света
             ModelProcessor.triangulate(mesh);
             ModelProcessor.computeNormals(mesh);
+
+            if (mesh != null) {
+                if (mesh.getModelMatrix() == null) {
+                    mesh.setModelMatrix(Matrix4x4.identity());
+                }
+            }
 
         } catch (Exception e) {
             showError("Ошибка загрузки", e.getMessage());
@@ -319,9 +327,9 @@ public class GuiController {
                 gc.setStroke(javafx.scene.paint.Color.GOLD);
 
                 // Матрица: Позиция света + уменьшение масштаба (чтобы отличить от камер)
-                Matrix4x4 modelMatrix = Matrix4x4.multiply(
-                        GraphicConveyor.translation(pl.getPosition().x, pl.getPosition().y, pl.getPosition().z),
-                        GraphicConveyor.scale(0.5f, 0.5f, 0.5f)
+                Matrix4x4 modelMatrix = AffineTransformation.combine(
+                        AffineTransformation.translation(pl.getPosition().x, pl.getPosition().y, pl.getPosition().z),
+                        AffineTransformation.scale(0.5f, 0.5f, 0.5f)
                 );
 
                 RenderEngine.render(
@@ -332,5 +340,88 @@ public class GuiController {
                 gc.setStroke(javafx.scene.paint.Color.BLACK); // Сброс цвета
             }
         }
+    }
+    @FXML private TextField translateX;
+    @FXML private TextField translateY;
+    @FXML private TextField translateZ;
+
+    @FXML private TextField rotateX;
+    @FXML private TextField rotateY;
+    @FXML private TextField rotateZ;
+
+    @FXML private TextField scaleX;
+    @FXML private TextField scaleY;
+    @FXML private TextField scaleZ;
+
+    @FXML private VBox transformPanel;
+
+    @FXML
+    private void onApplyTranslation() {
+        try {
+            if (mesh == null) return;
+            float tx = Float.parseFloat(translateX.getText());
+            float ty = Float.parseFloat(translateY.getText());
+            float tz = Float.parseFloat(translateZ.getText());
+
+            Matrix4x4 current = mesh.getModelMatrix();
+            Matrix4x4 translation = AffineTransformation.translation(tx, ty, tz);
+            mesh.setModelMatrix(translation.multiply(current));
+
+            ModelProcessor.computeNormals(mesh);
+        } catch (NumberFormatException e) {
+            showError("Invalid input", "Please enter valid numbers for translation");
+        }
+    }
+
+    @FXML
+    private void onApplyRotation() {
+        try {
+            if (mesh == null) return;
+
+            float rx = Float.parseFloat(rotateX.getText());
+            float ry = Float.parseFloat(rotateY.getText());
+            float rz = Float.parseFloat(rotateZ.getText());
+
+            Matrix4x4 current = mesh.getModelMatrix();
+            Matrix4x4 rotationX = AffineTransformation.rotationX(rx);
+            Matrix4x4 rotationY = AffineTransformation.rotationY(ry);
+            Matrix4x4 rotationZ = AffineTransformation.rotationZ(rz);
+
+            Matrix4x4 rotation = rotationZ.multiply(rotationY).multiply(rotationX);
+            mesh.setModelMatrix(rotation.multiply(current));
+
+            ModelProcessor.computeNormals(mesh);
+        } catch (NumberFormatException e) {
+            showError("Invalid input", "Please enter valid numbers for translation");
+        }
+    }
+
+    @FXML
+    private void onApplyScale() {
+        try {
+            if (mesh == null) return;
+
+            float sx = Float.parseFloat(scaleX.getText());
+            float sy = Float.parseFloat(scaleY.getText());
+            float sz = Float.parseFloat(scaleZ.getText());
+
+            Matrix4x4 current = mesh.getModelMatrix();
+            Matrix4x4 scale = AffineTransformation.scale(sx, sy, sz);
+            mesh.setModelMatrix(scale.multiply(current));
+
+            ModelProcessor.computeNormals(mesh);
+        } catch (NumberFormatException e) {
+            showError("Invalid input", "Please enter valid numbers for translation");
+        }
+    }
+
+    @FXML
+    private void onHideTransformPanel() {
+        transformPanel.setVisible(false);
+    }
+
+    @FXML
+    private void onShowTransformPanel() {
+        transformPanel.setVisible(true);
     }
 }
