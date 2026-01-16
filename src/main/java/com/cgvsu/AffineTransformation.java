@@ -1,6 +1,9 @@
 package com.cgvsu;
 
 import com.cgvsu.math.Matrix4x4;
+import com.cgvsu.model.ModelProcessor;
+import javafx.fxml.FXML;
+import com.cgvsu.model.Model;
 
 public class AffineTransformation {
 
@@ -86,5 +89,21 @@ public class AffineTransformation {
         Matrix4x4 translate = translation(tx, ty, tz);
 
         return combine(translate, rotateZ, rotateY, rotateX, scale);
+    }
+    public static void transformate(Model model, float tx, float ty, float tz, float rx, float ry, float rz, float sx, float sy, float sz) {
+        if (model == null) return;
+
+        Matrix4x4 current = model.getModelMatrix();
+        Matrix4x4 scale = scale(sx, sy, sz);
+        Matrix4x4 rotationX = rotationX(rx);
+        Matrix4x4 rotationY = rotationY(ry);
+        Matrix4x4 rotationZ = rotationZ(rz);
+        Matrix4x4 translation = translation(tx, ty, tz);
+
+        Matrix4x4 transform = combine(translation, rotationZ, rotationY, rotationX, scale);
+
+        model.setModelMatrix(transform.multiply(current));
+
+        ModelProcessor.computeNormals(model);
     }
 }

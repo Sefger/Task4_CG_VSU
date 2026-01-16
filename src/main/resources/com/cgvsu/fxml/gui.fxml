@@ -173,7 +173,6 @@
                 <Label text="Z:" prefWidth="30"/>
                 <TextField fx:id="translateZ" text="0" prefWidth="70"/>
             </HBox>
-            <Button text="Apply" onAction="#onApplyTranslation" prefWidth="70"/>
         </VBox>
 
         <VBox spacing="5">
@@ -190,7 +189,6 @@
                 <Label text="Z:" prefWidth="30"/>
                 <TextField fx:id="rotateZ" text="0" prefWidth="70"/>
             </HBox>
-            <Button text="Apply" onAction="#onApplyRotation" prefWidth="70"/>
         </VBox>
 
         <VBox spacing="5">
@@ -207,9 +205,9 @@
                 <Label text="Z:" prefWidth="30"/>
                 <TextField fx:id="scaleZ" text="1" prefWidth="70"/>
             </HBox>
-            <Button text="Apply" onAction="#onApplyScale" prefWidth="70"/>
         </VBox>
 
         <Button text="Hide Panel" onAction="#onHideTransformPanel" prefWidth="280"/>
+        <Button text="Apply" onAction="#onApplyTransformate" prefWidth="280"/>
     </VBox>
 </AnchorPane>

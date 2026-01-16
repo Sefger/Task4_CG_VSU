@@ -455,62 +455,22 @@ public class GuiController {
     @FXML
     private TextField scaleZ;
 
-
     @FXML
-    private void onApplyTranslation() {
-        try {
-            if (scene.getActiveModel() == null) return;
-            float tx = Float.parseFloat(translateX.getText());
-            float ty = Float.parseFloat(translateY.getText());
-            float tz = Float.parseFloat(translateZ.getText());
-
-            Matrix4x4 current = scene.getActiveModel().getModelMatrix();
-            Matrix4x4 translation = AffineTransformation.translation(tx, ty, tz);
-            scene.getActiveModel().setModelMatrix(translation.multiply(current));
-
-            ModelProcessor.computeNormals(scene.getActiveModel());
-        } catch (NumberFormatException e) {
-            showError("Invalid input", "Please enter valid numbers for translation");
-        }
-    }
-
-    @FXML
-    private void onApplyRotation() {
-        try {
-            if (scene.getActiveModel() == null) return;
-
-            float rx = Float.parseFloat(rotateX.getText());
-            float ry = Float.parseFloat(rotateY.getText());
-            float rz = Float.parseFloat(rotateZ.getText());
-
-            Matrix4x4 current = scene.getActiveModel().getModelMatrix();
-            Matrix4x4 rotationX = AffineTransformation.rotationX(rx);
-            Matrix4x4 rotationY = AffineTransformation.rotationY(ry);
-            Matrix4x4 rotationZ = AffineTransformation.rotationZ(rz);
-
-            Matrix4x4 rotation = rotationZ.multiply(rotationY).multiply(rotationX);
-            scene.getActiveModel().setModelMatrix(rotation.multiply(current));
-
-            ModelProcessor.computeNormals(scene.getActiveModel());
-        } catch (NumberFormatException e) {
-            showError("Invalid input", "Please enter valid numbers for translation");
-        }
-    }
-
-    @FXML
-    private void onApplyScale() {
+    private void onApplyTransformate() {
         try {
             if (scene.getActiveModel() == null) return;
 
             float sx = Float.parseFloat(scaleX.getText());
             float sy = Float.parseFloat(scaleY.getText());
             float sz = Float.parseFloat(scaleZ.getText());
+            float rx = Float.parseFloat(rotateX.getText());
+            float ry = Float.parseFloat(rotateY.getText());
+            float rz = Float.parseFloat(rotateZ.getText());
+            float tx = Float.parseFloat(translateX.getText());
+            float ty = Float.parseFloat(translateY.getText());
+            float tz = Float.parseFloat(translateZ.getText());
 
-            Matrix4x4 current = scene.getActiveModel().getModelMatrix();
-            Matrix4x4 scale = AffineTransformation.scale(sx, sy, sz);
-            scene.getActiveModel().setModelMatrix(scale.multiply(current));
-
-            ModelProcessor.computeNormals(scene.getActiveModel());
+            AffineTransformation.transformate(scene.getActiveModel(), tx, ty, tz, rx, ry, rz, sx, sy, sz);
         } catch (NumberFormatException e) {
             showError("Invalid input", "Please enter valid numbers for translation");
         }
