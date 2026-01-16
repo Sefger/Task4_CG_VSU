@@ -81,10 +81,6 @@ public class GuiController {
             int index = newVal.intValue();
             scene.setActiveModelIndex(index);
 
-            // 1. Очищаем поля трансформации при переключении,
-            // чтобы случайно не применить старые значения к новому объекту
-            clearTransformFields();
-
             // 2. (Опционально) Выводим в консоль для теста
             if (index != -1) {
                 System.out.println("Выбрана модель: " + modelListView.getItems().get(index));
@@ -471,6 +467,8 @@ public class GuiController {
             float tz = Float.parseFloat(translateZ.getText());
 
             AffineTransformation.transformate(scene.getActiveModel(), tx, ty, tz, rx, ry, rz, sx, sy, sz);
+
+            clearTransformFields();
         } catch (NumberFormatException e) {
             showError("Invalid input", "Please enter valid numbers for translation");
         }
