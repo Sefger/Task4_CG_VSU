@@ -1,72 +1,79 @@
 package com.cgvsu.render_engine;
 
 import com.cgvsu.model.Model;
+import javafx.scene.image.Image;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Scene {
     private List<Model> models = new ArrayList<>();
     private List<Model> originalModels = new ArrayList<>();
-    private int activeModelIndex = -1; // -1, если моделей нет
+    private List<Image> textures = new ArrayList<>(); // Перенесли список текстур сюда
+
+    private int activeModelIndex = -1;
+
     private List<Camera> cameras = new ArrayList<>();
-    private List<Light> lights = new ArrayList<>();
     private int activeCameraIndex = 0;
+
+    private List<Light> lights = new ArrayList<>();
+
+    // --- Камеры ---
 
     public void addCamera(Camera camera) {
         this.cameras.add(camera);
     }
-    public List<Model> getOriginalModels() { return originalModels;}
 
     public void removeCamera(int index) {
-        // Проверка: нельзя удалить единственную камеру и индекс должен быть валидным
         if (cameras.size() <= 1 || index < 0 || index >= cameras.size()) {
             return;
         }
-
         cameras.remove(index);
-
-        // Корректируем активный индекс после удаления
         if (activeCameraIndex >= index) {
-            // Сдвигаем индекс назад, но не меньше 0
             activeCameraIndex = Math.max(0, activeCameraIndex - 1);
         }
     }
 
     public Camera getActiveCamera() {
-        if (cameras.isEmpty()) {
-            return null; // Или выбросить исключение, если камер нет
-        }
-        return cameras.get(activeCameraIndex);
+        return cameras.isEmpty() ? null : cameras.get(activeCameraIndex);
     }
 
-    public List<Camera> getCameras() {
-        return cameras;
-    }
-
-    public int getActiveCameraIndex() {
-        return activeCameraIndex;
-    }
-
+    public List<Camera> getCameras() { return cameras; }
+    public int getActiveCameraIndex() { return activeCameraIndex; }
     public void setActiveCamera(int index) {
-        // Проверка: индекс должен быть от 0 до size-1 ВКЛЮЧИТЕЛЬНО
-        if (index >= 0 && index < cameras.size()) {
-            activeCameraIndex = index;
-        }
+        if (index >= 0 && index < cameras.size()) activeCameraIndex = index;
     }
 
-    public List<Light> getLights() {
-        return lights;
-    }
+    // --- Свет ---
+
+    public List<Light> getLights() { return lights; }
+
+    // --- Модели и Текстуры ---
 
     public void addModel(Model model) {
         models.add(model);
         originalModels.add(model);
+        textures.add(null); // Синхронно добавляем пустую текстуру
         if (activeModelIndex == -1) activeModelIndex = 0;
     }
 
-    public List<Model> getModels() {
-        return models;
+    public void removeModel(int index) {
+        if (index >= 0 && index < models.size()) {
+            models.remove(index);
+            originalModels.remove(index);
+            textures.remove(index); // Синхронно удаляем текстуру
+
+            if (models.isEmpty()) {
+                activeModelIndex = -1;
+            } else if (activeModelIndex >= index) {
+                activeModelIndex = Math.max(0, activeModelIndex - 1);
+            }
+        }
     }
+
+    public List<Model> getModels() { return models; }
+    public List<Model> getOriginalModels() { return originalModels; }
+
+    public List<Image> getTextures() { return textures; }
 
     public Model getActiveModel() {
         if (activeModelIndex >= 0 && activeModelIndex < models.size()) {
@@ -75,30 +82,26 @@ public class Scene {
         return null;
     }
 
-    public void setActiveModelIndex(int index){
-        if(index >= 0 && index < models.size()){
+    // Метод для получения текстуры активной модели
+    public Image getActiveTexture() {
+        if (activeModelIndex >= 0 && activeModelIndex < textures.size()) {
+            return textures.get(activeModelIndex);
+        }
+        return null;
+    }
+
+    // Метод для установки текстуры активной модели
+    public void setActiveTexture(Image image) {
+        if (activeModelIndex >= 0 && activeModelIndex < textures.size()) {
+            textures.set(activeModelIndex, image);
+        }
+    }
+
+    public void setActiveModelIndex(int index) {
+        if (index >= -1 && index < models.size()) {
             this.activeModelIndex = index;
         }
     }
 
-    public int getActiveModelIndex(){
-        return activeModelIndex;
-    }
-
-    public void removeModel(int index) {
-        if (index >= 0 && index < models.size()) {
-            models.remove(index);
-            originalModels.remove(index);
-
-            // Корректируем индекс активной модели, чтобы он не указывал в пустоту
-            if (models.isEmpty()) {
-                activeModelIndex = -1;
-            } else if (activeModelIndex >= index) {
-                // Если удалили модель перед активной или саму активную,
-                // сдвигаем индекс назад
-                activeModelIndex = Math.max(0, activeModelIndex - 1);
-            }
-        }
-    }
-
+    public int getActiveModelIndex() { return activeModelIndex; }
 }
