@@ -92,8 +92,9 @@ public class GuiController {
             int index = newVal.intValue();
             scene.setActiveModelIndex(index);
 
-            // 2. (Опционально) Выводим в консоль для теста
+            //Выводим в консоль для теста
             if (index != -1) {
+                focusCameraOnActiveModel();
                 System.out.println("Выбрана модель: " + modelListView.getItems().get(index));
             }
         });
@@ -147,7 +148,7 @@ public class GuiController {
         if (scene.getActiveCamera() != null && scene.getActiveModel() != null && event.getButton() == MouseButton.PRIMARY) {
             scene.getActiveCamera().rotateAroundPoint(scene.getActiveCamera().getTarget(), (float) deltaX, (float) deltaY);
         } else if (event.getButton() == MouseButton.SECONDARY) {
-            Vector3f translation = new Vector3f((float) deltaX * 0.01f,(float) -deltaY * 0.01f,0);
+            Vector3f translation = new Vector3f((float) deltaX * 0.01f, (float) -deltaY * 0.01f, 0);
             scene.getActiveCamera().move(translation);
         }
 
@@ -268,6 +269,7 @@ public class GuiController {
             modelListView.getItems().remove(index);
         }
     }
+
     private void onSaveModel(Model model) {
         if (model == null) {
             showError("Модель не загружена", "Сначала загрузите модель для сохранения");
@@ -316,10 +318,12 @@ public class GuiController {
             }
         }
     }
+
     @FXML
     private void onSaveOriginalModelMenuItemClick() {
         onSaveModel(scene.getOriginalModels().get(scene.getActiveModelIndex()));
     }
+
     @FXML
     private void onSaveTransformedModelMenuItemClick() {
         onSaveModel(scene.getActiveModel());
@@ -433,6 +437,25 @@ public class GuiController {
         a.setContentText(msg);
         a.show();
     }
+
+    private Vector3f getModelCenter(Model model) {
+        if (model.getVertices().isEmpty()) return new Vector3f(0, 0, 0);
+
+        // Берем позицию из матрицы трансформации модели (4-й столбец матрицы)
+        Matrix4x4 matrix = model.getModelMatrix();
+        return new Vector3f(matrix.get(0, 3), matrix.get(1, 3), matrix.get(2, 3));
+    }
+
+    private void focusCameraOnActiveModel() {
+        Model activeModel = scene.getActiveModel();
+        Camera activeCamera = scene.getActiveCamera();
+
+        if (activeModel != null && activeCamera != null) {
+            Vector3f center = getModelCenter(activeModel);
+            activeCamera.setTarget(center);
+        }
+    }
+
 
     @FXML
     private void onAddPointLightClick() {
