@@ -33,12 +33,18 @@ public class GuiController {
     private double mousePrevX, mousePrevY;
     private boolean isMousePressed = false;
 
-    @FXML AnchorPane anchorPane;
-    @FXML private Canvas canvas;
-    @FXML private CheckMenuItem drawGridCheck, useTextureCheck, useLightingCheck;
-    @FXML private ListView<String> modelListView;
-    @FXML private VBox transformPanel;
-    @FXML private TextField translateX, translateY, translateZ, rotateX, rotateY, rotateZ, scaleX, scaleY, scaleZ;
+    @FXML
+    AnchorPane anchorPane;
+    @FXML
+    private Canvas canvas;
+    @FXML
+    private CheckMenuItem drawGridCheck, useTextureCheck, useLightingCheck;
+    @FXML
+    private ListView<String> modelListView;
+    @FXML
+    private VBox transformPanel;
+    @FXML
+    private TextField translateX, translateY, translateZ, rotateX, rotateY, rotateZ, scaleX, scaleY, scaleZ;
 
     private Scene scene = new Scene();
     private Model cameraMarkerMesh = null;
@@ -82,16 +88,23 @@ public class GuiController {
         activeCamera.setAspectRatio((float) (width / height));
 
         for (int i = 0; i < scene.getModels().size(); i++) {
+            Model m = scene.getModels().get(i);
             RenderEngine.render(
-                    gc, activeCamera, scene.getModels().get(i),
-                    (int) width, (int) height, scene.getModels().get(i).getModelMatrix(),
+                    gc, activeCamera, m,
+                    (int) width, (int) height, m.getModelMatrix(),
                     scene.getTextures().get(i), scene.getLights(),
                     drawGridCheck.isSelected(),
                     useTextureCheck.isSelected(), useLightingCheck.isSelected()
             );
+
+            // Если модель активна — рисуем поверх неё оси
+            if (i == scene.getActiveModelIndex()) {
+                RenderEngine.renderAxes(gc, activeCamera, m.getModelMatrix(), (int) width, (int) height);
+            }
         }
         renderMarkers(width, height);
     }
+
 
     // --- Файловые операции (Модели и Текстуры) ---
 
@@ -109,12 +122,17 @@ public class GuiController {
             scene.addModel(m);
             modelListView.getItems().add("Model " + scene.getModels().size() + ": " + file.getName());
             modelListView.getSelectionModel().selectLast();
-        } catch (Exception e) { showError("Error", e.getMessage()); }
+        } catch (Exception e) {
+            showError("Error", e.getMessage());
+        }
     }
 
     @FXML
     private void onOpenTextureMenuItemClick() {
-        if (scene.getActiveModelIndex() == -1) { showError("Ошибка", "Выберите модель"); return; }
+        if (scene.getActiveModelIndex() == -1) {
+            showError("Ошибка", "Выберите модель");
+            return;
+        }
         FileChooser fc = new FileChooser();
         fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("Images", "*.png", "*.jpg", "*.jpeg"));
         File file = fc.showOpenDialog((Stage) canvas.getScene().getWindow());
@@ -156,14 +174,23 @@ public class GuiController {
                 if (!path.toLowerCase().endsWith(".obj")) path += ".obj";
                 ObjWriter.write(model, path);
                 showInfo("Успех", "Модель сохранена");
-            } catch (Exception e) { showError("Ошибка", e.getMessage()); }
+            } catch (Exception e) {
+                showError("Ошибка", e.getMessage());
+            }
         }
     }
 
     // --- Управление панелью трансформаций ---
 
-    @FXML private void onShowTransformPanel() { transformPanel.setVisible(true); }
-    @FXML private void onHideTransformPanel() { transformPanel.setVisible(false); }
+    @FXML
+    private void onShowTransformPanel() {
+        transformPanel.setVisible(true);
+    }
+
+    @FXML
+    private void onHideTransformPanel() {
+        transformPanel.setVisible(false);
+    }
 
     @FXML
     private void onApplyTransformate() {
@@ -173,7 +200,9 @@ public class GuiController {
                     Float.parseFloat(translateX.getText()), Float.parseFloat(translateY.getText()), Float.parseFloat(translateZ.getText()),
                     Float.parseFloat(rotateX.getText()), Float.parseFloat(rotateY.getText()), Float.parseFloat(rotateZ.getText()),
                     Float.parseFloat(scaleX.getText()), Float.parseFloat(scaleY.getText()), Float.parseFloat(scaleZ.getText()));
-        } catch (Exception e) { showError("Ошибка", "Некорректные числа"); }
+        } catch (Exception e) {
+            showError("Ошибка", "Некорректные числа");
+        }
     }
 
     // --- Управление камерами ---
@@ -181,38 +210,100 @@ public class GuiController {
     @FXML
     public void onAddCameraMenuItemClick() {
         Camera c = scene.getActiveCamera();
-        scene.addCamera(new Camera(new Vector3f(c.getPosition().x + 2, c.getPosition().y, c.getPosition().z), new Vector3f(0,0,0), 60, 1, 0.1f, 1000));
+        scene.addCamera(new Camera(new Vector3f(c.getPosition().x + 2, c.getPosition().y, c.getPosition().z), new Vector3f(0, 0, 0), 60, 1, 0.1f, 1000));
     }
 
-    @FXML public void onNextCameraMenuItemClick() { if(!scene.getCameras().isEmpty()) scene.setActiveCamera((scene.getActiveCameraIndex() + 1) % scene.getCameras().size()); }
-    @FXML public void onDeleteCameraMenuItemClick() { if(scene.getCameras().size() > 1) scene.removeCamera(scene.getActiveCameraIndex()); }
+    @FXML
+    public void onNextCameraMenuItemClick() {
+        if (!scene.getCameras().isEmpty())
+            scene.setActiveCamera((scene.getActiveCameraIndex() + 1) % scene.getCameras().size());
+    }
 
-    @FXML public void handleCameraForward() { scene.getActiveCamera().movePosition(new Vector3f(0, 0, -TRANSLATION)); }
-    @FXML public void handleCameraBackward() { scene.getActiveCamera().movePosition(new Vector3f(0, 0, TRANSLATION)); }
-    @FXML public void handleCameraLeft() { scene.getActiveCamera().movePosition(new Vector3f(TRANSLATION, 0, 0)); }
-    @FXML public void handleCameraRight() { scene.getActiveCamera().movePosition(new Vector3f(-TRANSLATION, 0, 0)); }
-    @FXML public void handleCameraUp() { scene.getActiveCamera().movePosition(new Vector3f(0, TRANSLATION, 0)); }
-    @FXML public void handleCameraDown() { scene.getActiveCamera().movePosition(new Vector3f(0, -TRANSLATION, 0)); }
+    @FXML
+    public void onDeleteCameraMenuItemClick() {
+        if (scene.getCameras().size() > 1) scene.removeCamera(scene.getActiveCameraIndex());
+    }
+
+    @FXML
+    public void handleCameraForward() {
+        scene.getActiveCamera().movePosition(new Vector3f(0, 0, -TRANSLATION));
+    }
+
+    @FXML
+    public void handleCameraBackward() {
+        scene.getActiveCamera().movePosition(new Vector3f(0, 0, TRANSLATION));
+    }
+
+    @FXML
+    public void handleCameraLeft() {
+        scene.getActiveCamera().movePosition(new Vector3f(TRANSLATION, 0, 0));
+    }
+
+    @FXML
+    public void handleCameraRight() {
+        scene.getActiveCamera().movePosition(new Vector3f(-TRANSLATION, 0, 0));
+    }
+
+    @FXML
+    public void handleCameraUp() {
+        scene.getActiveCamera().movePosition(new Vector3f(0, TRANSLATION, 0));
+    }
+
+    @FXML
+    public void handleCameraDown() {
+        scene.getActiveCamera().movePosition(new Vector3f(0, -TRANSLATION, 0));
+    }
 
     // --- Работа с геометрией ---
 
-    @FXML private void onTriangulateModelMenuItemClick() { if (scene.getActiveModel() != null) ModelProcessor.triangulate(scene.getActiveModel()); }
-    @FXML private void onComputeNormalsMenuItemClick() { if (scene.getActiveModel() != null) ModelProcessor.computeNormals(scene.getActiveModel()); }
-    @FXML private void onModelInfoMenuItemClick() {
+    @FXML
+    private void onTriangulateModelMenuItemClick() {
+        if (scene.getActiveModel() != null) ModelProcessor.triangulate(scene.getActiveModel());
+    }
+
+    @FXML
+    private void onComputeNormalsMenuItemClick() {
+        if (scene.getActiveModel() != null) ModelProcessor.computeNormals(scene.getActiveModel());
+    }
+
+    @FXML
+    private void onModelInfoMenuItemClick() {
         Model m = scene.getActiveModel();
         if (m != null) showInfo("Инфо", "Вершин: " + m.getVertices().size() + "\nПолигонов: " + m.getPolygons().size());
     }
 
     // --- Управление светом ---
 
-    @FXML private void onClearLightsClick() { scene.getLights().clear(); scene.getLights().add(new DirectionalLight(new Vector3f(-1,-1,-1), 0.5f)); }
-    @FXML private void onAddPointLightClick() { scene.getLights().add(new PointLight(new Vector3f(0, 10, 0), 0.8f)); }
-    @FXML private void onAddLightAtCameraClick() { if(scene.getActiveCamera() != null) scene.getLights().add(new PointLight(scene.getActiveCamera().getPosition(), 0.8f)); }
+    @FXML
+    private void onClearLightsClick() {
+        scene.getLights().clear();
+        scene.getLights().add(new DirectionalLight(new Vector3f(-1, -1, -1), 0.5f));
+    }
+
+    @FXML
+    private void onAddPointLightClick() {
+        scene.getLights().add(new PointLight(new Vector3f(0, 10, 0), 0.8f));
+    }
+
+    @FXML
+    private void onAddLightAtCameraClick() {
+        if (scene.getActiveCamera() != null)
+            scene.getLights().add(new PointLight(scene.getActiveCamera().getPosition(), 0.8f));
+    }
 
     // --- Навигация моделей ---
 
-    @FXML public void onNextModelMenuItemClick() { if (!scene.getModels().isEmpty()) modelListView.getSelectionModel().select((scene.getActiveModelIndex() + 1) % scene.getModels().size()); }
-    @FXML public void onPrevModelMenuItemClick() { if (!scene.getModels().isEmpty()) modelListView.getSelectionModel().select((scene.getActiveModelIndex() - 1 + scene.getModels().size()) % scene.getModels().size()); }
+    @FXML
+    public void onNextModelMenuItemClick() {
+        if (!scene.getModels().isEmpty())
+            modelListView.getSelectionModel().select((scene.getActiveModelIndex() + 1) % scene.getModels().size());
+    }
+
+    @FXML
+    public void onPrevModelMenuItemClick() {
+        if (!scene.getModels().isEmpty())
+            modelListView.getSelectionModel().select((scene.getActiveModelIndex() - 1 + scene.getModels().size()) % scene.getModels().size());
+    }
 
     // --- Вспомогательные методы ---
 
@@ -224,15 +315,28 @@ public class GuiController {
         }
     }
 
-    private void handleMousePressed(MouseEvent e) { mousePrevX = e.getX(); mousePrevY = e.getY(); isMousePressed = true; canvas.requestFocus(); }
+    private void handleMousePressed(MouseEvent e) {
+        mousePrevX = e.getX();
+        mousePrevY = e.getY();
+        isMousePressed = true;
+        canvas.requestFocus();
+    }
+
     private void handleMouseDragged(MouseEvent e) {
         if (!isMousePressed || scene.getActiveCamera() == null) return;
-        float dx = (float)(e.getX() - mousePrevX); float dy = (float)(e.getY() - mousePrevY);
-        if (e.getButton() == MouseButton.PRIMARY) scene.getActiveCamera().rotateAroundPoint(scene.getActiveCamera().getTarget(), dx, dy);
-        else if (e.getButton() == MouseButton.SECONDARY) scene.getActiveCamera().move(new Vector3f(dx * 0.01f, -dy * 0.01f, 0));
-        mousePrevX = e.getX(); mousePrevY = e.getY();
+        float dx = (float) (e.getX() - mousePrevX);
+        float dy = (float) (e.getY() - mousePrevY);
+        if (e.getButton() == MouseButton.PRIMARY)
+            scene.getActiveCamera().rotateAroundPoint(scene.getActiveCamera().getTarget(), dx, dy);
+        else if (e.getButton() == MouseButton.SECONDARY)
+            scene.getActiveCamera().move(new Vector3f(dx * 0.01f, -dy * 0.01f, 0));
+        mousePrevX = e.getX();
+        mousePrevY = e.getY();
     }
-    private void handleMouseScroll(ScrollEvent e) { if (scene.getActiveCamera() != null) scene.getActiveCamera().zoom((float) e.getDeltaY()); }
+
+    private void handleMouseScroll(ScrollEvent e) {
+        if (scene.getActiveCamera() != null) scene.getActiveCamera().zoom((float) e.getDeltaY());
+    }
 
     private void renderMarkers(double w, double h) {
         Camera active = scene.getActiveCamera();
@@ -240,22 +344,44 @@ public class GuiController {
         for (int i = 0; i < scene.getCameras().size(); i++) {
             if (i == scene.getActiveCameraIndex()) continue;
             Vector3f p = scene.getCameras().get(i).getPosition();
-            RenderEngine.render(gc, active, cameraMarkerMesh, (int)w, (int)h, AffineTransformation.translation(p.x, p.y, p.z), null, null, true, false, false);
+            RenderEngine.render(gc, active, cameraMarkerMesh, (int) w, (int) h, AffineTransformation.translation(p.x, p.y, p.z), null, null, true, false, false);
         }
     }
 
     private Model createCameraMarker() {
         Model m = new Model();
-        m.getVertices().add(new Vector3f(0, 0, 0)); m.getVertices().add(new Vector3f(-0.5f, -0.5f, 1.2f));
-        m.getVertices().add(new Vector3f(0.5f, -0.5f, 1.2f)); m.getVertices().add(new Vector3f(0.5f, 0.5f, 1.2f));
+        m.getVertices().add(new Vector3f(0, 0, 0));
+        m.getVertices().add(new Vector3f(-0.5f, -0.5f, 1.2f));
+        m.getVertices().add(new Vector3f(0.5f, -0.5f, 1.2f));
+        m.getVertices().add(new Vector3f(0.5f, 0.5f, 1.2f));
         m.getVertices().add(new Vector3f(-0.5f, 0.5f, 1.2f));
-        m.getPolygons().add(createPoly(0, 1, 2)); m.getPolygons().add(createPoly(0, 2, 3));
-        m.getPolygons().add(createPoly(0, 3, 4)); m.getPolygons().add(createPoly(0, 4, 1));
+        m.getPolygons().add(createPoly(0, 1, 2));
+        m.getPolygons().add(createPoly(0, 2, 3));
+        m.getPolygons().add(createPoly(0, 3, 4));
+        m.getPolygons().add(createPoly(0, 4, 1));
         ModelProcessor.computeNormals(m);
         return m;
     }
 
-    private Polygon createPoly(int... i) { Polygon p = new Polygon(); p.setVertexIndices(i); return p; }
-    private void showError(String t, String m) { Alert a = new Alert(Alert.AlertType.ERROR); a.setTitle(t); a.setHeaderText(null); a.setContentText(m); a.show(); }
-    private void showInfo(String t, String m) { Alert a = new Alert(Alert.AlertType.INFORMATION); a.setTitle(t); a.setHeaderText(null); a.setContentText(m); a.show(); }
+    private Polygon createPoly(int... i) {
+        Polygon p = new Polygon();
+        p.setVertexIndices(i);
+        return p;
+    }
+
+    private void showError(String t, String m) {
+        Alert a = new Alert(Alert.AlertType.ERROR);
+        a.setTitle(t);
+        a.setHeaderText(null);
+        a.setContentText(m);
+        a.show();
+    }
+
+    private void showInfo(String t, String m) {
+        Alert a = new Alert(Alert.AlertType.INFORMATION);
+        a.setTitle(t);
+        a.setHeaderText(null);
+        a.setContentText(m);
+        a.show();
+    }
 }
