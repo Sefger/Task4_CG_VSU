@@ -18,6 +18,9 @@ import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
@@ -31,6 +34,8 @@ import java.nio.file.Files;
 public class GuiController {
 
     private final float TRANSLATION = 0.5F;
+    private double mousePrevX, mousePrevY;
+    private boolean isMousePressed = false;
 
     @FXML
     AnchorPane anchorPane;
@@ -60,6 +65,12 @@ public class GuiController {
         // 1. Привязка размеров
         anchorPane.prefWidthProperty().addListener((ov, oldValue, newValue) -> canvas.setWidth(newValue.doubleValue()));
         anchorPane.prefHeightProperty().addListener((ov, oldValue, newValue) -> canvas.setHeight(newValue.doubleValue()));
+
+        // обработчики мыши
+        canvas.setOnMousePressed(this::handleMousePressed);
+        canvas.setOnMouseDragged(this::handleMouseDragged);
+        canvas.setOnMouseReleased(this::handleMouseReleased);
+        canvas.setOnScroll(this::handleMouseScroll);
 
         // 2. Ресурсы
         this.cameraMarkerMesh = createCameraMarker();
@@ -118,6 +129,38 @@ public class GuiController {
 
         timeline.getKeyFrames().add(frame);
         timeline.play();
+    }
+
+    private void handleMousePressed(MouseEvent event) {
+        mousePrevX = event.getX();
+        mousePrevY = event.getY();
+        isMousePressed = true;
+        canvas.requestFocus();
+    }
+
+    private void handleMouseDragged(MouseEvent event) {
+        if (!isMousePressed) return;
+
+        double deltaX = event.getX() - mousePrevX;
+        double deltaY = event.getY() - mousePrevY;
+
+        if (scene.getActiveCamera() != null && scene.getActiveModel() != null && event.getButton() == MouseButton.PRIMARY) {
+            scene.getActiveCamera().rotateAroundPoint(new Vector3f(0, 0, 0), (float) deltaX, (float) deltaY);
+        }
+
+        mousePrevX = event.getX();
+        mousePrevY = event.getY();
+    }
+
+    private void handleMouseReleased(MouseEvent event) {
+        isMousePressed = false;
+    }
+
+    private void handleMouseScroll(ScrollEvent event) {
+        if (scene.getActiveCamera() != null) {
+            float delta = (float) event.getDeltaY();
+            scene.getActiveCamera().zoom(delta);
+        }
     }
 
     private void clearTransformFields() {
