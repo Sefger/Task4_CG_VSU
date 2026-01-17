@@ -1,6 +1,8 @@
 package com.cgvsu.render_engine;
 
+import com.cgvsu.AffineTransformation;
 import com.cgvsu.math.Vector3f;
+import com.cgvsu.math.Vector4f;
 import com.cgvsu.math.Matrix4x4;
 
 public class Camera {
@@ -48,6 +50,40 @@ public class Camera {
         this.target.add(translation);
     }
 
+    // вращение
+    public void rotateAroundPoint(Vector3f point, float deltaX, float deltaY) {
+        Vector4f cameraOffset = new Vector4f(position.x - point.x,position.y - point.y,position.z - point.z,1);
+
+        Matrix4x4 rotateY = AffineTransformation.rotationY(deltaX * 0.01f);
+        Matrix4x4 rotateX = AffineTransformation.rotationX(-deltaY * 0.01f);
+
+        Matrix4x4 rotationMatrix = AffineTransformation.combine(rotateX, rotateY);
+
+        Vector4f r = rotationMatrix.multiply(cameraOffset);
+        position = new Vector3f(point.x + r.x,point.y + r.y,point.z + r.z);
+        target = point;
+    }
+
+    //приближение/отдаление
+    public void zoom(float delta) {
+        Vector3f direction = new Vector3f(
+                target.x - position.x,
+                target.y - position.y,
+                target.z - position.z
+        );
+        direction.normalized();
+        position.x += direction.x * delta * 0.1f;
+        position.y += direction.y * delta * 0.1f;
+        position.z += direction.z * delta * 0.1f;
+    }
+    public void move(final Vector3f translation) {
+        position.x += translation.x;
+        position.y += translation.y;
+        position.z += translation.z;
+        target.x += translation.x;
+        target.y += translation.y;
+        target.z += translation.z;
+    }
     Matrix4x4 getViewMatrix() {
         return GraphicConveyor.lookAt(position, target);
     }

@@ -6,6 +6,7 @@ import java.util.List;
 
 public class Scene {
     private List<Model> models = new ArrayList<>();
+    private List<Model> originalModels = new ArrayList<>();
     private int activeModelIndex = -1; // -1, если моделей нет
     private List<Camera> cameras = new ArrayList<>();
     private List<Light> lights = new ArrayList<>();
@@ -14,6 +15,7 @@ public class Scene {
     public void addCamera(Camera camera) {
         this.cameras.add(camera);
     }
+    public List<Model> getOriginalModels() { return originalModels;}
 
     public void removeCamera(int index) {
         // Проверка: нельзя удалить единственную камеру и индекс должен быть валидным
@@ -58,6 +60,7 @@ public class Scene {
 
     public void addModel(Model model) {
         models.add(model);
+        originalModels.add(model);
         if (activeModelIndex == -1) activeModelIndex = 0;
     }
 
@@ -85,6 +88,7 @@ public class Scene {
     public void removeModel(int index) {
         if (index >= 0 && index < models.size()) {
             models.remove(index);
+            originalModels.remove(index);
 
             // Корректируем индекс активной модели, чтобы он не указывал в пустоту
             if (models.isEmpty()) {

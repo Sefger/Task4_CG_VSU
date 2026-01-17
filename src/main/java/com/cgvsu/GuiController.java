@@ -18,6 +18,9 @@ import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
@@ -31,6 +34,8 @@ import java.nio.file.Files;
 public class GuiController {
 
     private final float TRANSLATION = 0.5F;
+    private double mousePrevX, mousePrevY;
+    private boolean isMousePressed = false;
 
     @FXML
     AnchorPane anchorPane;
@@ -61,6 +66,12 @@ public class GuiController {
         anchorPane.prefWidthProperty().addListener((ov, oldValue, newValue) -> canvas.setWidth(newValue.doubleValue()));
         anchorPane.prefHeightProperty().addListener((ov, oldValue, newValue) -> canvas.setHeight(newValue.doubleValue()));
 
+        // обработчики мыши
+        canvas.setOnMousePressed(this::handleMousePressed);
+        canvas.setOnMouseDragged(this::handleMouseDragged);
+        canvas.setOnMouseReleased(this::handleMouseReleased);
+        canvas.setOnScroll(this::handleMouseScroll);
+
         // 2. Ресурсы
         this.cameraMarkerMesh = createCameraMarker();
 
@@ -80,10 +91,6 @@ public class GuiController {
         modelListView.getSelectionModel().selectedIndexProperty().addListener((obs, oldVal, newVal) -> {
             int index = newVal.intValue();
             scene.setActiveModelIndex(index);
-
-            // 1. Очищаем поля трансформации при переключении,
-            // чтобы случайно не применить старые значения к новому объекту
-            clearTransformFields();
 
             // 2. (Опционально) Выводим в консоль для теста
             if (index != -1) {
@@ -122,6 +129,41 @@ public class GuiController {
 
         timeline.getKeyFrames().add(frame);
         timeline.play();
+    }
+
+    private void handleMousePressed(MouseEvent event) {
+        mousePrevX = event.getX();
+        mousePrevY = event.getY();
+        isMousePressed = true;
+        canvas.requestFocus();
+    }
+
+    private void handleMouseDragged(MouseEvent event) {
+        if (!isMousePressed) return;
+
+        double deltaX = event.getX() - mousePrevX;
+        double deltaY = event.getY() - mousePrevY;
+
+        if (scene.getActiveCamera() != null && scene.getActiveModel() != null && event.getButton() == MouseButton.PRIMARY) {
+            scene.getActiveCamera().rotateAroundPoint(scene.getActiveCamera().getTarget(), (float) deltaX, (float) deltaY);
+        } else if (event.getButton() == MouseButton.SECONDARY) {
+            Vector3f translation = new Vector3f((float) deltaX * 0.01f,(float) -deltaY * 0.01f,0);
+            scene.getActiveCamera().move(translation);
+        }
+
+        mousePrevX = event.getX();
+        mousePrevY = event.getY();
+    }
+
+    private void handleMouseReleased(MouseEvent event) {
+        isMousePressed = false;
+    }
+
+    private void handleMouseScroll(ScrollEvent event) {
+        if (scene.getActiveCamera() != null) {
+            float delta = (float) event.getDeltaY();
+            scene.getActiveCamera().zoom(delta);
+        }
     }
 
     private void clearTransformFields() {
@@ -226,11 +268,8 @@ public class GuiController {
             modelListView.getItems().remove(index);
         }
     }
-
-    @FXML
-    private void onSaveModelMenuItemClick() {
-        Model activeModel = scene.getActiveModel();
-        if (activeModel == null) {
+    private void onSaveModel(Model model) {
+        if (model == null) {
             showError("Модель не загружена", "Сначала загрузите модель для сохранения");
             return;
         }
@@ -263,7 +302,7 @@ public class GuiController {
                 }
 
                 // Сохраняем модель с помощью ObjWriter
-                ObjWriter.write(scene.getActiveModel(), filePath);
+                ObjWriter.write(model, filePath);
 
                 showInfo("Сохранение завершено",
                         "Модель успешно сохранена в файл:\n" + filePath);
@@ -276,6 +315,14 @@ public class GuiController {
                         "Ошибка при сохранении модели:\n" + e.getMessage());
             }
         }
+    }
+    @FXML
+    private void onSaveOriginalModelMenuItemClick() {
+        onSaveModel(scene.getOriginalModels().get(scene.getActiveModelIndex()));
+    }
+    @FXML
+    private void onSaveTransformedModelMenuItemClick() {
+        onSaveModel(scene.getActiveModel());
     }
 
     @FXML
@@ -455,62 +502,24 @@ public class GuiController {
     @FXML
     private TextField scaleZ;
 
-
     @FXML
-    private void onApplyTranslation() {
-        try {
-            if (scene.getActiveModel() == null) return;
-            float tx = Float.parseFloat(translateX.getText());
-            float ty = Float.parseFloat(translateY.getText());
-            float tz = Float.parseFloat(translateZ.getText());
-
-            Matrix4x4 current = scene.getActiveModel().getModelMatrix();
-            Matrix4x4 translation = AffineTransformation.translation(tx, ty, tz);
-            scene.getActiveModel().setModelMatrix(translation.multiply(current));
-
-            ModelProcessor.computeNormals(scene.getActiveModel());
-        } catch (NumberFormatException e) {
-            showError("Invalid input", "Please enter valid numbers for translation");
-        }
-    }
-
-    @FXML
-    private void onApplyRotation() {
-        try {
-            if (scene.getActiveModel() == null) return;
-
-            float rx = Float.parseFloat(rotateX.getText());
-            float ry = Float.parseFloat(rotateY.getText());
-            float rz = Float.parseFloat(rotateZ.getText());
-
-            Matrix4x4 current = scene.getActiveModel().getModelMatrix();
-            Matrix4x4 rotationX = AffineTransformation.rotationX(rx);
-            Matrix4x4 rotationY = AffineTransformation.rotationY(ry);
-            Matrix4x4 rotationZ = AffineTransformation.rotationZ(rz);
-
-            Matrix4x4 rotation = rotationZ.multiply(rotationY).multiply(rotationX);
-            scene.getActiveModel().setModelMatrix(rotation.multiply(current));
-
-            ModelProcessor.computeNormals(scene.getActiveModel());
-        } catch (NumberFormatException e) {
-            showError("Invalid input", "Please enter valid numbers for translation");
-        }
-    }
-
-    @FXML
-    private void onApplyScale() {
+    private void onApplyTransformate() {
         try {
             if (scene.getActiveModel() == null) return;
 
             float sx = Float.parseFloat(scaleX.getText());
             float sy = Float.parseFloat(scaleY.getText());
             float sz = Float.parseFloat(scaleZ.getText());
+            float rx = Float.parseFloat(rotateX.getText());
+            float ry = Float.parseFloat(rotateY.getText());
+            float rz = Float.parseFloat(rotateZ.getText());
+            float tx = Float.parseFloat(translateX.getText());
+            float ty = Float.parseFloat(translateY.getText());
+            float tz = Float.parseFloat(translateZ.getText());
 
-            Matrix4x4 current = scene.getActiveModel().getModelMatrix();
-            Matrix4x4 scale = AffineTransformation.scale(sx, sy, sz);
-            scene.getActiveModel().setModelMatrix(scale.multiply(current));
+            AffineTransformation.transformate(scene.getActiveModel(), tx, ty, tz, rx, ry, rz, sx, sy, sz);
 
-            ModelProcessor.computeNormals(scene.getActiveModel());
+            clearTransformFields();
         } catch (NumberFormatException e) {
             showError("Invalid input", "Please enter valid numbers for translation");
         }
