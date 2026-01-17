@@ -76,6 +76,14 @@ public class Camera {
         position.y += direction.y * delta * 0.1f;
         position.z += direction.z * delta * 0.1f;
     }
+    public void move(final Vector3f translation) {
+        position.x += translation.x;
+        position.y += translation.y;
+        position.z += translation.z;
+        target.x += translation.x;
+        target.y += translation.y;
+        target.z += translation.z;
+    }
     Matrix4x4 getViewMatrix() {
         return GraphicConveyor.lookAt(position, target);
     }

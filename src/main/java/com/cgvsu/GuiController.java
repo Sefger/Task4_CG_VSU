@@ -145,7 +145,10 @@ public class GuiController {
         double deltaY = event.getY() - mousePrevY;
 
         if (scene.getActiveCamera() != null && scene.getActiveModel() != null && event.getButton() == MouseButton.PRIMARY) {
-            scene.getActiveCamera().rotateAroundPoint(new Vector3f(0, 0, 0), (float) deltaX, (float) deltaY);
+            scene.getActiveCamera().rotateAroundPoint(scene.getActiveCamera().getTarget(), (float) deltaX, (float) deltaY);
+        } else if (event.getButton() == MouseButton.SECONDARY) {
+            Vector3f translation = new Vector3f((float) deltaX * 0.01f,(float) -deltaY * 0.01f,0);
+            scene.getActiveCamera().move(translation);
         }
 
         mousePrevX = event.getX();
@@ -265,11 +268,8 @@ public class GuiController {
             modelListView.getItems().remove(index);
         }
     }
-
-    @FXML
-    private void onSaveModelMenuItemClick() {
-        Model activeModel = scene.getActiveModel();
-        if (activeModel == null) {
+    private void onSaveModel(Model model) {
+        if (model == null) {
             showError("Модель не загружена", "Сначала загрузите модель для сохранения");
             return;
         }
@@ -302,7 +302,7 @@ public class GuiController {
                 }
 
                 // Сохраняем модель с помощью ObjWriter
-                ObjWriter.write(scene.getActiveModel(), filePath);
+                ObjWriter.write(model, filePath);
 
                 showInfo("Сохранение завершено",
                         "Модель успешно сохранена в файл:\n" + filePath);
@@ -315,6 +315,14 @@ public class GuiController {
                         "Ошибка при сохранении модели:\n" + e.getMessage());
             }
         }
+    }
+    @FXML
+    private void onSaveOriginalModelMenuItemClick() {
+        onSaveModel(scene.getOriginalModels().get(scene.getActiveModelIndex()));
+    }
+    @FXML
+    private void onSaveTransformedModelMenuItemClick() {
+        onSaveModel(scene.getActiveModel());
     }
 
     @FXML

@@ -18,9 +18,14 @@
                     <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="K"/>
                 </accelerator>
             </MenuItem>
-            <MenuItem mnemonicParsing="false" onAction="#onSaveModelMenuItemClick" text="Save Model">
+            <MenuItem mnemonicParsing="false" onAction="#onSaveOriginalModelMenuItemClick" text="Save Original Model">
                 <accelerator>
                     <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="S"/>
+                </accelerator>
+            </MenuItem>
+            <MenuItem mnemonicParsing="false" onAction="#onSaveTransformedModelMenuItemClick" text="Save Transformed Model">
+                <accelerator>
+                    <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="A"/>
                 </accelerator>
             </MenuItem>
             <SeparatorMenuItem/>
