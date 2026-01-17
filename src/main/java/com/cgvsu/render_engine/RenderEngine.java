@@ -119,4 +119,59 @@ public class RenderEngine {
             }
         }
     }
+
+    public static void renderAxes( // для осей
+            final GraphicsContext gc,
+            final Camera camera,
+            final Matrix4x4 modelMatrix,
+            final int width,
+            final int height) {
+
+        Matrix4x4 viewMatrix = camera.getViewMatrix();
+        Matrix4x4 projectionMatrix = camera.getProjectionMatrix();
+        Matrix4x4 mvp = projectionMatrix.multiply(viewMatrix).multiply(modelMatrix);
+
+        // Центр и направления осей в локальных координатах модели
+        Vector3f center = new Vector3f(0, 0, 0);
+        Vector3f axisX = new Vector3f(20.0f, 0, 0);
+        Vector3f axisY = new Vector3f(0, 20.0f, 0);
+        Vector3f axisZ = new Vector3f(0, 0, 20.0f);
+
+        // Проецируем точки на экран
+        Vector3f screenCenter = projectPoint(mvp, center, width, height);
+        Vector3f screenX = projectPoint(mvp, axisX, width, height);
+        Vector3f screenY = projectPoint(mvp, axisY, width, height);
+        Vector3f screenZ = projectPoint(mvp, axisZ, width, height);
+
+        if (screenCenter == null) return;
+
+        // Отрисовка X - Красная
+        if (screenX != null) {
+            gc.setStroke(javafx.scene.paint.Color.rgb(200, 50, 50, 0.5));
+            gc.setLineWidth(2.0);
+            gc.strokeLine(screenCenter.x, screenCenter.y, screenX.x, screenX.y);
+        }
+
+        // Отрисовка Y - Зеленая
+        if (screenY != null) {
+            gc.setStroke(javafx.scene.paint.Color.rgb(50, 180, 50, 0.5));
+            gc.strokeLine(screenCenter.x, screenCenter.y, screenY.x, screenY.y);
+        }
+
+        // Отрисовка Z - Синяя
+        if (screenZ != null) {
+            gc.setStroke(javafx.scene.paint.Color.rgb(50, 80, 200, 0.5));
+            gc.strokeLine(screenCenter.x, screenCenter.y, screenZ.x, screenZ.y);
+        }
+    }
+
+    // Вспомогательный метод для проекции одной точки
+    private static Vector3f projectPoint(Matrix4x4 mvp, Vector3f point, int width, int height) {
+        Vector3f transV = GraphicConveyor.multiplyMatrix4ByVector3(mvp, point);
+
+        if (transV.z < -1 || transV.z > 1) return null;
+        float x = (transV.x + 1) * width * 0.5f;
+        float y = (1 - transV.y) * height * 0.5f;
+        return new Vector3f(x, y, transV.z);
+    }
 }
