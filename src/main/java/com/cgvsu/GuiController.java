@@ -116,10 +116,9 @@ public class GuiController {
                     useTextureCheck.isSelected(), useLightingCheck.isSelected()
             );
 
-            if (i == scene.getActiveModelIndex()) {
-                RenderEngine.renderAxes(gc, activeCamera, (int) width, (int) height);
-            }
         }
+
+        RenderEngine.renderAxes(gc, activeCamera, (int) width, (int) height);
         renderMarkers(width, height);
     }
 
