@@ -119,53 +119,66 @@ public class RenderEngine {
     public static void renderAxes(
             final GraphicsContext gc,
             final Camera camera,
-            final int width, final int height) {
+            final int width,
+            final int height) {
 
         Matrix4x4 viewMatrix = camera.getViewMatrix();
-        Matrix4x4 projectionMatrix = camera.getProjectionMatrix();
 
-        // ИСКУССТВЕННО создаем MVP только из вида и проекции.
-        // Это заставит оси рисоваться в (0,0,0) глобального пространства.
-        Matrix4x4 mvpAxes = projectionMatrix.multiply(viewMatrix);
-        // Если вы хотите, чтобы оси двигались ВМЕСТЕ с моделью, но не вращались —
-        // нужно вытащить из modelMatrix только Translation.
+        // Извлекаем компоненты вращения из матрицы вида
+        float[][] rot = {
+                {viewMatrix.get(0, 0), viewMatrix.get(0, 1), viewMatrix.get(0, 2)},
+                {viewMatrix.get(1, 0), viewMatrix.get(1, 1), viewMatrix.get(1, 2)},
+                {viewMatrix.get(2, 0), viewMatrix.get(2, 1), viewMatrix.get(2, 2)}
+        };
 
-        // Координаты осей
-        Vector3f center = new Vector3f(0, 0, 0);
-        Vector3f axisX = new Vector3f(2.0f, 0, 0); // Уменьшил длину для аккуратности
-        Vector3f axisY = new Vector3f(0, 2.0f, 0);
-        Vector3f axisZ = new Vector3f(0, 0, 2.0f);
+        // Параметры отображения
+        float margin = 60;      // Отступ от угла экрана
+        float fixedSize = 35;   // Длина линий в пикселях
+        float textOffset = 12;  // На сколько пикселей буква дальше конца линии
 
-        // Проецируем точки, используя "чистую" матрицу без трансформаций модели
-        Vector3f screenCenter = projectPoint(mvpAxes, center, width, height);
-        Vector3f screenX = projectPoint(mvpAxes, axisX, width, height);
-        Vector3f screenY = projectPoint(mvpAxes, axisY, width, height);
-        Vector3f screenZ = projectPoint(mvpAxes, axisZ, width, height);
+        float centerX = margin;
+        float centerY = height - margin;
 
-        if (screenCenter == null) return;
+        gc.setLineWidth(2.5);
+        gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, 14));
 
-        gc.setLineWidth(2.0); // Сделаем оси чуть толще для видимости
+        // Отрисовка осей с буквами
+        drawFixedAxis(gc, centerX, centerY, rot[0][0], -rot[1][0], fixedSize, textOffset, "X", javafx.scene.paint.Color.RED);
+        drawFixedAxis(gc, centerX, centerY, rot[0][1], -rot[1][1], fixedSize, textOffset, "Y", javafx.scene.paint.Color.GREEN);
+        drawFixedAxis(gc, centerX, centerY, rot[0][2], -rot[1][2], fixedSize, textOffset, "Z", javafx.scene.paint.Color.BLUE);
 
-        if (screenX != null) {
-            gc.setStroke(javafx.scene.paint.Color.RED);
-            gc.strokeLine(screenCenter.x, screenCenter.y, screenX.x, screenX.y);
-        }
-        if (screenY != null) {
-            gc.setStroke(javafx.scene.paint.Color.GREEN);
-            gc.strokeLine(screenCenter.x, screenCenter.y, screenY.x, screenY.y);
-        }
-        if (screenZ != null) {
-            gc.setStroke(javafx.scene.paint.Color.BLUE);
-            gc.strokeLine(screenCenter.x, screenCenter.y, screenZ.x, screenZ.y);
-        }
-        gc.setLineWidth(1.0); // Возвращаем стандартную толщину
+        gc.setLineWidth(1.0);
     }
 
-    private static Vector3f projectPoint(Matrix4x4 mvp, Vector3f point, int width, int height) {
-        Vector3f transV = GraphicConveyor.multiplyMatrix4ByVector3(mvp, point);
-        if (transV.z < -1 || transV.z > 1) return null;
-        float x = (transV.x + 1) * width * 0.5f;
-        float y = (1 - transV.y) * height * 0.5f;
-        return new Vector3f(x, y, transV.z);
+    private static void drawFixedAxis(
+            GraphicsContext gc,
+            float cx, float cy,
+            float dirX, float dirY,
+            float length,
+            float textOffset,
+            String label,
+            javafx.scene.paint.Color color) {
+
+        float currentProjLength = (float) Math.sqrt(dirX * dirX + dirY * dirY);
+
+        if (currentProjLength > 0.0001f) {
+            // Нормализованное направление на экране
+            float nx = dirX / currentProjLength;
+            float ny = dirY / currentProjLength;
+
+            // Координаты конца линии
+            float endX = cx + nx * length;
+            float endY = cy + ny * length;
+
+            // Рисуем линию
+            gc.setStroke(color);
+            gc.strokeLine(cx, cy, endX, endY);
+
+            // Рисуем букву чуть дальше конца линии
+            gc.setFill(color);
+            // Небольшая корректировка, чтобы буква была по центру точки
+            gc.fillText(label, endX + nx * textOffset - 5, endY + ny * textOffset + 5);
+        }
     }
+
 }
