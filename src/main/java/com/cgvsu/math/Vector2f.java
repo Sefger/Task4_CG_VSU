@@ -1,12 +1,11 @@
 package com.cgvsu.math;
 
 public class Vector2f {
+    public float x, y;
     public Vector2f(float x, float y) {
         this.x = x;
         this.y = y;
     }
-
-    public float x, y;
 
     public boolean equals(Vector2f other) {
         final float eps = 1e-7f;
@@ -51,11 +50,10 @@ public class Vector2f {
 
     // нормализация
     public Vector2f normalized() {
-        float len = length();
-        if (len == 0) {
+        if (length() == 0) {
             return new Vector2f(0, 0);
         }
-        return new Vector2f(x / len, y / len);
+        return new Vector2f(x / length(), y / length());
     }
 
     // скалярное произведение

@@ -92,7 +92,6 @@ public class AffineTransformation {
     }
     public static void transformation(Model model, float tx, float ty, float tz, float rx, float ry, float rz, float sx, float sy, float sz) {
         if (model == null) return;
-
         rx = rx * (float) Math.PI / 180.0f;
         ry = ry * (float) Math.PI / 180.0f;
         rz = rz * (float) Math.PI / 180.0f;
@@ -107,8 +106,6 @@ public class AffineTransformation {
         Matrix4x4 transform = combine(translation, rotationZ, rotationY, rotationX, scale);
 
         model.setModelMatrix(transform.multiply(current));
-
-        ModelProcessor.computeNormals(model);
     }
     public static void randomTransformation(Model model) {
         Random random = new Random();
