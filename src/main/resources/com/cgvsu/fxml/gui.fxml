@@ -64,6 +64,19 @@
             <CheckMenuItem fx:id="useTextureCheck" mnemonicParsing="false" text="Use Texture"/>
             <CheckMenuItem fx:id="useLightingCheck" mnemonicParsing="false" text="Enable Lighting" selected="true"/>
         </Menu>
+
+        <Menu mnemonicParsing="false" text="Model Selection">
+            <MenuItem mnemonicParsing="false" onAction="#onNextModelMenuItemClick" text="Next Model">
+                <accelerator>
+                    <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="RIGHT"/>
+                </accelerator>
+            </MenuItem>
+            <MenuItem mnemonicParsing="false" onAction="#onPrevModelMenuItemClick" text="Previous Model">
+                <accelerator>
+                    <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="LEFT"/>
+                </accelerator>
+            </MenuItem>
+        </Menu>
     </MenuBar>
 
     <Canvas fx:id="canvas"
