@@ -89,8 +89,8 @@ public class GuiController {
         double height = canvas.getHeight();
         var gc = canvas.getGraphicsContext2D();
 
-        // 1. Очищаем визуальный слой Canvas
-        gc.clearRect(0, 0, width, height);
+        gc.setFill(javafx.scene.paint.Color.rgb(228, 222, 212));
+        gc.fillRect(0, 0, width, height);
 
         Camera activeCamera = scene.getActiveCamera();
         if (activeCamera == null) return;

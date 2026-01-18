@@ -107,7 +107,7 @@ public class GraphicConveyor {
                     if (currentZ < zBuffer[idx]) {
                         zBuffer[idx] = currentZ;
 
-                        int color = 0x4287f5; // Цвет по умолчанию
+                        int color = 0xd5d2da; // Цвет по умолчанию
                         if (texture != null && uv1 != null) {
                             float u = alpha * uv1.x + beta * uv2.x + gamma * uv3.x;
                             float v = alpha * uv1.y + beta * uv2.y + gamma * uv3.y;

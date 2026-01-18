@@ -1,0 +1,34 @@
+<style>
+    .root { -fx-base: #f0f0f0; }
+
+    /* Убираем синюю рамку у ListView */
+    .list-view, .list-view:focused {
+        -fx-background-insets: 0 !important;
+        -fx-background-color: transparent, white !important;
+        -fx-border-color: #dcdcdc !important;
+    }
+
+    /* Базовый стиль всех кнопок */
+    .button {
+        -fx-background-color: #e1e1e1;
+        -fx-background-insets: 0 !important;
+    }
+
+    /* ОБЩЕЕ ПРАВИЛО: все кнопки при наведении — серые */
+    .button:hover {
+        -fx-background-color: #D5D5D5 !important;
+        -fx-text-fill: black !important;
+    }
+
+    /* СПЕЦИАЛЬНОЕ ПРАВИЛО: Кнопка Delete при наведении — КРАСНАЯ */
+    /* Мы используем селектор .delete-button */
+    .delete-button:hover {
+        -fx-background-color: #ffcccc !important; /* Твой цвет ffcccc */
+        -fx-text-fill: #a10000 !important;        /* Темно-красный текст для читаемости */
+    }
+
+    /* Убираем синий ободок фокусировки */
+    .button:focused {
+        -fx-background-insets: 0 !important;
+    }
+</style>
