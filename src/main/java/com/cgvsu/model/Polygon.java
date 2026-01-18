@@ -99,15 +99,4 @@ public class Polygon {
         return false;
     }
 
-    /**
-     * Метод для динамического добавления индекса (если понадобится при редактировании).
-     * Создает новый массив на n+1 элементов.
-     */
-    public void addVertex(int index) {
-        int[] newIndices = new int[vertexIndices.length + 1];
-        System.arraycopy(vertexIndices, 0, newIndices, 0, vertexIndices.length);
-        newIndices[vertexIndices.length] = index;
-        vertexIndices = newIndices;
-    }
-
 }
