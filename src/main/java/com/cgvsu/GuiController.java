@@ -15,15 +15,15 @@ import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
-import javafx.scene.input.KeyEvent;
-import javafx.scene.input.MouseButton;
-import javafx.scene.input.MouseEvent;
-import javafx.scene.input.ScrollEvent;
+import javafx.scene.input.*;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import javafx.scene.control.RadioMenuItem;
+import java.util.List;
+import java.util.ArrayList;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -42,10 +42,18 @@ public class GuiController {
     @FXML private TextField translateX, translateY, translateZ, rotateX, rotateY, rotateZ, scaleX, scaleY, scaleZ;
     @FXML private CheckBox randomTransformationCheck;
 
+    @FXML private RadioMenuItem deletePolygonsMode;
+    @FXML private RadioMenuItem deleteVerticesMode;
+
     private Scene scene = new Scene();
     private Model cameraMarkerMesh = null;
     private Timeline timeline;
     private boolean randomTransformation = false;
+
+    private int selectedPolygonIdx = -1;
+    private int selectedVertexIdx = -1;
+    private Model targetModel = null;
+
 
     @FXML
     private void initialize() {
@@ -78,6 +86,8 @@ public class GuiController {
     }
 
     private void handleKeyPress(KeyEvent event) {
+        handleKey(event.getCode());
+
         switch (event.getCode()) {
             case UP -> handleCameraForward();
             case DOWN -> handleCameraBackward();
@@ -85,6 +95,32 @@ public class GuiController {
             case RIGHT -> handleCameraRight();
             case W -> handleCameraUp();
             case S -> handleCameraDown();
+        }
+    }
+    public void handleKey(KeyCode code) {
+        // Проверяем, есть ли модель, в которой мы что-то выделили
+        if (targetModel == null) return;
+
+        if (code == KeyCode.DELETE || code == KeyCode.BACK_SPACE) {
+
+            // Режим удаления ПОЛИГОНА
+            if (deletePolygonsMode.isSelected() && selectedPolygonIdx >= 0) {
+                // Удаляем через сцену (как в pickAndRemoveElement) или напрямую через модель
+                scene.deletePolygonsInActiveModel(java.util.List.of(selectedPolygonIdx));
+
+                ModelProcessor.computeNormals(targetModel);
+                resetSelection();
+                System.out.println("Полигон удален клавишей.");
+            }
+
+            // Режим удаления ВЕРШИНЫ
+            else if (deleteVerticesMode.isSelected() && selectedVertexIdx >= 0) {
+                scene.deleteVerticesInActiveModel(java.util.List.of(selectedVertexIdx));
+
+                ModelProcessor.computeNormals(targetModel);
+                resetSelection();
+                System.out.println("Вершина удалена клавишей.");
+            }
         }
     }
 
@@ -108,14 +144,20 @@ public class GuiController {
 
         for (int i = 0; i < scene.getModels().size(); i++) {
             Model m = scene.getModels().get(i);
+
+            // Передаем индексы выделения только для той модели, по которой кликнули
+            int polySelection = (m == targetModel) ? selectedPolygonIdx : -1;
+            int vertexSelection = (m == targetModel) ? selectedVertexIdx : -1;
+
             RenderEngine.render(
                     gc, activeCamera, m,
                     (int) width, (int) height, m.getModelMatrix(),
                     scene.getTextures().get(i), scene.getLights(),
                     drawGridCheck.isSelected(),
-                    useTextureCheck.isSelected(), useLightingCheck.isSelected()
+                    useTextureCheck.isSelected(), useLightingCheck.isSelected(),
+                    polySelection,  // Передаем выбранный полигон
+                    vertexSelection // Передаем выбранную вершину
             );
-
         }
 
         RenderEngine.renderAxes(gc, activeCamera, (int) width, (int) height);
@@ -331,12 +373,7 @@ public class GuiController {
         }
     }
 
-    private void handleMousePressed(MouseEvent e) {
-        mousePrevX = e.getX();
-        mousePrevY = e.getY();
-        isMousePressed = true;
-        canvas.requestFocus();
-    }
+
 
     private void handleMouseDragged(MouseEvent e) {
         if (!isMousePressed || scene.getActiveCamera() == null) return;
@@ -361,7 +398,7 @@ public class GuiController {
         for (int i = 0; i < scene.getCameras().size(); i++) {
             if (i == scene.getActiveCameraIndex()) continue;
             Vector3f p = scene.getCameras().get(i).getPosition();
-            RenderEngine.render(gc, active, cameraMarkerMesh, (int) w, (int) h, AffineTransformation.translation(p.x, p.y, p.z), null, null, true, false, false);
+            RenderEngine.render(gc, active, cameraMarkerMesh, (int) w, (int) h, AffineTransformation.translation(p.x, p.y, p.z), null, null, true, false, false, -1, -1);
         }
     }
 
@@ -396,5 +433,138 @@ public class GuiController {
         Alert a = new Alert(Alert.AlertType.INFORMATION);
         a.setTitle(t); a.setHeaderText(null); a.setContentText(m);
         a.show();
+    }
+
+    private void handleMousePressed(MouseEvent e) {
+        mousePrevX = e.getX();
+        mousePrevY = e.getY();
+        isMousePressed = true;
+        canvas.requestFocus();
+
+        // Если зажат ALT — удаляем объект кликом
+        if (e.isAltDown() && e.getButton() == MouseButton.PRIMARY && scene.getActiveModel() != null) {
+            pickAndRemoveElement(e.getX(), e.getY());
+        }
+    }
+
+    private void pickAndRemoveElement(double mouseX, double mouseY) {
+        Model model = scene.getActiveModel();
+        Camera camera = scene.getActiveCamera();
+        if (camera == null || model == null) return;
+
+        // 1. Создаем луч (Ray Casting)
+        float width = (float) canvas.getWidth();
+        float height = (float) canvas.getHeight();
+        float x = (2.0f * (float) mouseX) / width - 1.0f;
+        float y = 1.0f - (2.0f * (float) mouseY) / height;
+
+        // Инвертируем матрицу для перевода координат экрана в мировое пространство
+        Matrix4x4 invViewProj = camera.getProjectionMatrix().multiply(camera.getViewMatrix()).inverted();
+        Vector3f rayOrigin = camera.getPosition();
+        Vector3f target = GraphicConveyor.multiplyMatrix4ByVector3(invViewProj, new Vector3f(x, y, 1.0f));
+        Vector3f rayDir = Vector3f.subtract(target, rayOrigin).normalized();
+
+        // 2. Ищем САМЫЙ БЛИЖНИЙ полигон (используем minDistance)
+        int closestPolyIdx = -1;
+        float minDistance = Float.MAX_VALUE;
+        Matrix4x4 modelMatrix = model.getModelMatrix();
+
+        for (int i = 0; i < model.getPolygons().size(); i++) {
+            Polygon poly = model.getPolygons().get(i);
+            int[] vIdx = poly.getVertexIndices();
+
+            Vector3f v0 = GraphicConveyor.multiplyMatrix4ByVector3(modelMatrix, model.getVertices().get(vIdx[0]));
+            Vector3f v1 = GraphicConveyor.multiplyMatrix4ByVector3(modelMatrix, model.getVertices().get(vIdx[1]));
+            Vector3f v2 = GraphicConveyor.multiplyMatrix4ByVector3(modelMatrix, model.getVertices().get(vIdx[2]));
+
+            float dist = RenderEngine.rayTriangleIntersection(rayOrigin, rayDir, v0, v1, v2);
+
+            // ВАЖНО: берем только тот, что ближе всего к камере
+            if (dist > 0 && dist < minDistance) {
+                minDistance = dist;
+                closestPolyIdx = i;
+            }
+        }
+
+        // 3. Логика Выбора и Удаления
+        if (closestPolyIdx != -1) {
+            // Определяем вершину, если мы в режиме удаления вершин
+            int currentVertexIdx = -1;
+            if (deleteVerticesMode.isSelected()) {
+                currentVertexIdx = findClosestVertexToRay(model, model.getPolygons().get(closestPolyIdx).getVertexIndices(), rayOrigin, rayDir);
+            }
+
+            // Проверяем: это повторный клик по уже выбранному элементу?
+            boolean isConfirmed = (model == targetModel) && (
+                    (deletePolygonsMode.isSelected() && selectedPolygonIdx == closestPolyIdx) ||
+                            (deleteVerticesMode.isSelected() && selectedVertexIdx == currentVertexIdx)
+            );
+
+            if (isConfirmed) {
+                // ВТОРОЙ КЛИК: Выполняем удаление
+                if (deletePolygonsMode.isSelected()) {
+                    scene.deletePolygonsInActiveModel(java.util.List.of(selectedPolygonIdx));
+                } else {
+                    scene.deleteVerticesInActiveModel(java.util.List.of(selectedVertexIdx));
+                }
+
+                // Сбрасываем выбор и пересчитываем нормали
+                ModelProcessor.computeNormals(model);
+                resetSelection();
+                System.out.println("Удалено!");
+            } else {
+                // ПЕРВЫЙ КЛИК: Только выделяем
+                targetModel = model;
+                selectedPolygonIdx = closestPolyIdx;
+                selectedVertexIdx = currentVertexIdx;
+                System.out.println("Выбрано. Нажмите еще раз для удаления.");
+            }
+        } else {
+            resetSelection(); // Клик в пустоту снимает выделение
+        }
+    }
+
+    private void resetSelection() {
+        selectedPolygonIdx = -1;
+        selectedVertexIdx = -1;
+        targetModel = null;
+    }
+
+    private void performDeletion() {
+        if (deletePolygonsMode.isSelected() && selectedPolygonIdx != -1) {
+            scene.deletePolygonsInActiveModel(List.of(selectedPolygonIdx));
+        } else if (deleteVerticesMode.isSelected() && selectedVertexIdx != -1) {
+            scene.deleteVerticesInActiveModel(List.of(selectedVertexIdx));
+        }
+
+        // ВАЖНО: Пересчитываем всё после удаления
+        ModelProcessor.computeNormals(targetModel);
+    }
+
+
+    private int findClosestVertexToRay(Model model, int[] vIndices, Vector3f rayOrigin, Vector3f rayDir) {
+        int closestIdx = vIndices[0];
+        float minDistance = Float.MAX_VALUE;
+
+        // Матрица модели нужна, если вершины хранятся локально, а луч в мировых координатах
+        Matrix4x4 modelMatrix = model.getModelMatrix();
+
+        for (int idx : vIndices) {
+            // Получаем мировую позицию вершины
+            Vector3f vPosLocal = model.getVertices().get(idx);
+            Vector3f vPosWorld = GraphicConveyor.multiplyMatrix4ByVector3(modelMatrix, vPosLocal);
+
+            // Вычисляем расстояние от точки до прямой луча
+            Vector3f w = vPosWorld.subtract(rayOrigin);
+            float t = w.dot(rayDir);
+            Vector3f projection = Vector3f.add(rayDir,rayDir.multiply(t));
+            float distSq = vPosWorld.subtract(projection).lengthSquared();
+
+            if (distSq < minDistance) {
+                minDistance = distSq;
+                closestIdx = idx;
+            }
+        }
+        return closestIdx;
     }
 }
