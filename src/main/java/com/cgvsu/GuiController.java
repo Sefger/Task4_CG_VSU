@@ -157,7 +157,34 @@ public class GuiController {
     @FXML
     private void onRemoveModelClick() {
         int index = scene.getActiveModelIndex();
-        if (index != -1) {
+
+        if (index == -1) {
+            showError("Ошибка", "Модель не выбрана для удаления");
+            return;
+        }
+
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Подтверждение");
+        alert.setHeaderText(null);
+        alert.setContentText("Вы уверены, что хотите удалить выбранную модель?");
+
+        ButtonType buttonTypeYes = new ButtonType("Да", ButtonBar.ButtonData.YES);
+        ButtonType buttonTypeNo = new ButtonType("Нет", ButtonBar.ButtonData.NO);
+        alert.getButtonTypes().setAll(buttonTypeYes, buttonTypeNo);
+
+        DialogPane dialogPane = alert.getDialogPane();
+
+        for (ButtonType bt : alert.getButtonTypes()) {
+            Button button = (Button) dialogPane.lookupButton(bt);
+            button.setMinWidth(80);
+            button.setPrefWidth(80);
+        }
+
+        dialogPane.setStyle("-fx-padding: 20px;");
+
+        java.util.Optional<ButtonType> result = alert.showAndWait();
+
+        if (result.isPresent() && result.get() == buttonTypeYes) {
             scene.removeModel(index);
             modelListView.getItems().remove(index);
         }
