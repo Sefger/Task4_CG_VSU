@@ -128,9 +128,9 @@ public class RenderEngine {
         Matrix4x4 mvp = projectionMatrix.multiply(viewMatrix).multiply(modelMatrix);
 
         Vector3f center = new Vector3f(0, 0, 0);
-        Vector3f axisX = new Vector3f(2.0f, 0, 0);
-        Vector3f axisY = new Vector3f(0, 2.0f, 0);
-        Vector3f axisZ = new Vector3f(0, 0, 2.0f);
+        Vector3f axisX = new Vector3f(5.0f, 0, 0);
+        Vector3f axisY = new Vector3f(0, 5.0f, 0);
+        Vector3f axisZ = new Vector3f(0, 0, 5.0f);
 
         Vector3f screenCenter = projectPoint(mvp, center, width, height);
         Vector3f screenX = projectPoint(mvp, axisX, width, height);
