@@ -117,7 +117,7 @@ public class GuiController {
             );
 
             if (i == scene.getActiveModelIndex()) {
-                RenderEngine.renderAxes(gc, activeCamera, m.getModelMatrix(), (int) width, (int) height);
+                RenderEngine.renderAxes(gc, activeCamera, (int) width, (int) height);
             }
         }
         renderMarkers(width, height);

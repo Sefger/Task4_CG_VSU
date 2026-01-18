@@ -119,25 +119,32 @@ public class RenderEngine {
     public static void renderAxes(
             final GraphicsContext gc,
             final Camera camera,
-            final Matrix4x4 modelMatrix,
-            final int width,
-            final int height) {
+            final int width, final int height) {
 
         Matrix4x4 viewMatrix = camera.getViewMatrix();
         Matrix4x4 projectionMatrix = camera.getProjectionMatrix();
-        Matrix4x4 mvp = projectionMatrix.multiply(viewMatrix).multiply(modelMatrix);
 
+        // ИСКУССТВЕННО создаем MVP только из вида и проекции.
+        // Это заставит оси рисоваться в (0,0,0) глобального пространства.
+        Matrix4x4 mvpAxes = projectionMatrix.multiply(viewMatrix);
+        // Если вы хотите, чтобы оси двигались ВМЕСТЕ с моделью, но не вращались —
+        // нужно вытащить из modelMatrix только Translation.
+
+        // Координаты осей
         Vector3f center = new Vector3f(0, 0, 0);
-        Vector3f axisX = new Vector3f(5.0f, 0, 0);
-        Vector3f axisY = new Vector3f(0, 5.0f, 0);
-        Vector3f axisZ = new Vector3f(0, 0, 5.0f);
+        Vector3f axisX = new Vector3f(2.0f, 0, 0); // Уменьшил длину для аккуратности
+        Vector3f axisY = new Vector3f(0, 2.0f, 0);
+        Vector3f axisZ = new Vector3f(0, 0, 2.0f);
 
-        Vector3f screenCenter = projectPoint(mvp, center, width, height);
-        Vector3f screenX = projectPoint(mvp, axisX, width, height);
-        Vector3f screenY = projectPoint(mvp, axisY, width, height);
-        Vector3f screenZ = projectPoint(mvp, axisZ, width, height);
+        // Проецируем точки, используя "чистую" матрицу без трансформаций модели
+        Vector3f screenCenter = projectPoint(mvpAxes, center, width, height);
+        Vector3f screenX = projectPoint(mvpAxes, axisX, width, height);
+        Vector3f screenY = projectPoint(mvpAxes, axisY, width, height);
+        Vector3f screenZ = projectPoint(mvpAxes, axisZ, width, height);
 
         if (screenCenter == null) return;
+
+        gc.setLineWidth(2.0); // Сделаем оси чуть толще для видимости
 
         if (screenX != null) {
             gc.setStroke(javafx.scene.paint.Color.RED);
@@ -151,6 +158,7 @@ public class RenderEngine {
             gc.setStroke(javafx.scene.paint.Color.BLUE);
             gc.strokeLine(screenCenter.x, screenCenter.y, screenZ.x, screenZ.y);
         }
+        gc.setLineWidth(1.0); // Возвращаем стандартную толщину
     }
 
     private static Vector3f projectPoint(Matrix4x4 mvp, Vector3f point, int width, int height) {
