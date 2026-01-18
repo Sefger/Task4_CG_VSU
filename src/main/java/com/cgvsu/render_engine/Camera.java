@@ -80,11 +80,11 @@ public class Camera {
         movePosition(translation);
         moveTarget(translation);
     }
-    Matrix4x4 getViewMatrix() {
+    public Matrix4x4 getViewMatrix() {
         return GraphicConveyor.lookAt(position, target);
     }
 
-    Matrix4x4 getProjectionMatrix() {
+    public Matrix4x4 getProjectionMatrix() {
         return GraphicConveyor.perspective(fov, aspectRatio, nearPlane, farPlane);
     }
 
