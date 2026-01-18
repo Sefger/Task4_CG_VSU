@@ -212,7 +212,11 @@
             </HBox>
         </VBox>
 
+        <Button text="Apply" onAction="#onApplyTransformation" prefWidth="280"/>
+        <HBox spacing="5" prefWidth="280" alignment="CENTER_LEFT">
+            <CheckBox fx:id="randomTransformationCheck" text="Random transformation"
+                      onAction="#onRandomTransformationCheckClicked"/>
+        </HBox>
         <Button text="Hide Panel" onAction="#onHideTransformPanel" prefWidth="280"/>
-        <Button text="Apply" onAction="#onApplyTransformate" prefWidth="280"/>
     </VBox>
 </AnchorPane>

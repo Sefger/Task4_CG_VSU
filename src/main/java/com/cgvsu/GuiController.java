@@ -45,10 +45,13 @@ public class GuiController {
     private VBox transformPanel;
     @FXML
     private TextField translateX, translateY, translateZ, rotateX, rotateY, rotateZ, scaleX, scaleY, scaleZ;
+    @FXML
+    private CheckBox randomTransformationCheck;
 
     private Scene scene = new Scene();
     private Model cameraMarkerMesh = null;
     private Timeline timeline;
+    private boolean randomTransformation = false;
 
     @FXML
     private void initialize() {
@@ -78,6 +81,8 @@ public class GuiController {
     }
 
     private void render() {
+        if (randomTransformation && scene.getActiveModel() != null) AffineTransformation.randomTransformation(scene.getActiveModel());;
+
         double width = canvas.getWidth();
         double height = canvas.getHeight();
         var gc = canvas.getGraphicsContext2D();
@@ -193,16 +198,39 @@ public class GuiController {
     }
 
     @FXML
-    private void onApplyTransformate() {
+    private void onApplyTransformation() {
         try {
-            if (scene.getActiveModel() == null) return;
-            AffineTransformation.transformate(scene.getActiveModel(),
+            if (scene.getActiveModel() == null) {
+                showError("Ошибка", "Модель не загружена.");
+                return;
+            }
+            AffineTransformation.transformation(scene.getActiveModel(),
                     Float.parseFloat(translateX.getText()), Float.parseFloat(translateY.getText()), Float.parseFloat(translateZ.getText()),
                     Float.parseFloat(rotateX.getText()), Float.parseFloat(rotateY.getText()), Float.parseFloat(rotateZ.getText()),
                     Float.parseFloat(scaleX.getText()), Float.parseFloat(scaleY.getText()), Float.parseFloat(scaleZ.getText()));
+            translateX.setText("0");
+            translateY.setText("0");
+            translateZ.setText("0");
+            scaleX.setText("1");
+            scaleY.setText("1");
+            scaleZ.setText("1");
+            rotateX.setText("0");
+            rotateY.setText("0");
+            rotateZ.setText("0");
         } catch (Exception e) {
             showError("Ошибка", "Некорректные числа");
         }
+    }
+
+    @FXML
+    private void onRandomTransformationCheckClicked() {
+
+        if (scene.getActiveModel() == null) {
+            showError("Ошибка", "Модель не загружена");
+            randomTransformationCheck.setSelected(false);
+            return;
+        }
+        randomTransformation = randomTransformationCheck.isSelected();
     }
 
     // --- Управление камерами ---
@@ -326,10 +354,11 @@ public class GuiController {
         if (!isMousePressed || scene.getActiveCamera() == null) return;
         float dx = (float) (e.getX() - mousePrevX);
         float dy = (float) (e.getY() - mousePrevY);
-        if (e.getButton() == MouseButton.PRIMARY)
+        if (e.getButton() == MouseButton.PRIMARY) {
             scene.getActiveCamera().rotateAroundPoint(scene.getActiveCamera().getTarget(), dx, dy);
-        else if (e.getButton() == MouseButton.SECONDARY)
+        } else if (e.getButton() == MouseButton.SECONDARY) {
             scene.getActiveCamera().move(new Vector3f(dx * 0.01f, -dy * 0.01f, 0));
+        }
         mousePrevX = e.getX();
         mousePrevY = e.getY();
     }

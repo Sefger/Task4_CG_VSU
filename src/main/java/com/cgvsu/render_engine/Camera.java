@@ -71,18 +71,14 @@ public class Camera {
                 target.y - position.y,
                 target.z - position.z
         );
-        direction.normalized();
+        direction = direction.normalized();
         position.x += direction.x * delta * 0.1f;
         position.y += direction.y * delta * 0.1f;
         position.z += direction.z * delta * 0.1f;
     }
     public void move(final Vector3f translation) {
-        position.x += translation.x;
-        position.y += translation.y;
-        position.z += translation.z;
-        target.x += translation.x;
-        target.y += translation.y;
-        target.z += translation.z;
+        movePosition(translation);
+        moveTarget(translation);
     }
     Matrix4x4 getViewMatrix() {
         return GraphicConveyor.lookAt(position, target);

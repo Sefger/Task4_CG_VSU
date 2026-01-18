@@ -2,8 +2,8 @@ package com.cgvsu;
 
 import com.cgvsu.math.Matrix4x4;
 import com.cgvsu.model.ModelProcessor;
-import javafx.fxml.FXML;
 import com.cgvsu.model.Model;
+import java.util.Random;
 
 public class AffineTransformation {
 
@@ -90,8 +90,12 @@ public class AffineTransformation {
 
         return combine(translate, rotateZ, rotateY, rotateX, scale);
     }
-    public static void transformate(Model model, float tx, float ty, float tz, float rx, float ry, float rz, float sx, float sy, float sz) {
+    public static void transformation(Model model, float tx, float ty, float tz, float rx, float ry, float rz, float sx, float sy, float sz) {
         if (model == null) return;
+
+        rx = rx * (float) Math.PI / 180.0f;
+        ry = ry * (float) Math.PI / 180.0f;
+        rz = rz * (float) Math.PI / 180.0f;
 
         Matrix4x4 current = model.getModelMatrix();
         Matrix4x4 scale = scale(sx, sy, sz);
@@ -105,5 +109,22 @@ public class AffineTransformation {
         model.setModelMatrix(transform.multiply(current));
 
         ModelProcessor.computeNormals(model);
+    }
+    public static void randomTransformation(Model model) {
+        Random random = new Random();
+
+        float tx = (random.nextFloat() - 0.5f) * 0.2f;
+        float ty = (random.nextFloat() - 0.5f) * 0.2f;
+        float tz = (random.nextFloat() - 0.5f) * 0.2f;
+
+        float rx = (random.nextFloat() - 0.5f) * 0.05f;
+        float ry = (random.nextFloat() - 0.5f) * 0.05f;
+        float rz = (random.nextFloat() - 0.5f) * 0.05f;
+
+        float sx = 1.0f + (random.nextFloat() - 0.5f) * 0.02f;
+        float sy = 1.0f + (random.nextFloat() - 0.5f) * 0.02f;
+        float sz = 1.0f + (random.nextFloat() - 0.5f) * 0.02f;
+
+        transformation(model, tx, ty, tz, rx, ry, rz, sx, sy, sz);
     }
 }
