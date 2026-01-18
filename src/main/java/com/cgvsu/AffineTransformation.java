@@ -1,7 +1,6 @@
 package com.cgvsu;
 
 import com.cgvsu.math.Matrix4x4;
-import com.cgvsu.model.ModelProcessor;
 import com.cgvsu.model.Model;
 import java.util.Random;
 
