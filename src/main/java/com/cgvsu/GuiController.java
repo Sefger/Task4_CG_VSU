@@ -210,7 +210,7 @@ public class GuiController {
     @FXML
     private void onApplyTransformation() {
         try {
-            if (scene.getActiveModel() == null) {
+            if (scene.getActiveModelIndex() == -1) {
                 showError("Ошибка", "Модель не загружена.");
                 return;
             }
@@ -235,12 +235,31 @@ public class GuiController {
     @FXML
     private void onRandomTransformationCheckClicked() {
 
-        if (scene.getActiveModel() == null) {
+        if (scene.getActiveModelIndex() == -1) {
             showError("Ошибка", "Модель не загружена");
             randomTransformationCheck.setSelected(false);
             return;
         }
         randomTransformation = randomTransformationCheck.isSelected();
+    }
+    @FXML
+    private void onOriginalModel() {
+        if (scene.getActiveModelIndex() == -1) {
+            showError("Ошибка", "Модель не загружена");
+            return;
+        }
+        try {
+            randomTransformation = false;
+            randomTransformationCheck.setSelected(false);
+            Model originalModel = scene.getOriginalModels().get(scene.getActiveModelIndex());
+            Model restoredModel = originalModel.copy();
+            restoredModel.setModelMatrix(Matrix4x4.identity());
+            scene.getModels().set(scene.getActiveModelIndex(), restoredModel);
+            modelListView.getSelectionModel().clearAndSelect(scene.getActiveModelIndex());
+            showInfo("Успех", "Исходная модель восстановлена");
+        } catch (Exception e) {
+            showError("Ошибка", "Не удалось восстановить модель: " + e.getMessage());
+        }
     }
 
     // --- Управление камерами ---

@@ -1,21 +1,18 @@
 package com.cgvsu.math;
 
 public class Vector3f {
+    public float x, y, z;
     public Vector3f(float x, float y, float z) {
         this.x = x;
         this.y = y;
         this.z = z;
     }
-
     public boolean equals(Vector3f other) {
         final float eps = 1e-7f;
         return Math.abs(x - other.x) < eps &&
                 Math.abs(y - other.y) < eps &&
                 Math.abs(z - other.z) < eps;
     }
-
-    public float x, y, z;
-
     public float getX() {
         return x;
     }
@@ -58,11 +55,10 @@ public class Vector3f {
 
     // нормализация вектора
     public Vector3f normalized() {
-        float len = length();
-        if (len == 0) {
+        if (length() == 0) {
             return new Vector3f(0, 0, 0);
         }
-        return new Vector3f(x / len, y / len, z / len);
+        return new Vector3f(x / length(), y / length(), z / length());
     }
 
     // скалярное произведение

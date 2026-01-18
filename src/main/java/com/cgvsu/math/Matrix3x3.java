@@ -99,7 +99,7 @@ public class Matrix3x3 {
         return new Vector3f(x, y, z);
     }
 
-    // перемножение матриц
+    // умножение на матрицу
     public Matrix3x3 multiply(Matrix3x3 other) {
         float[][] result = new float[3][3];
         for (int i = 0; i < 3; i++) {

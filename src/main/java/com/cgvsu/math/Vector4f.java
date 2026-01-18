@@ -64,11 +64,10 @@ public class Vector4f {
 
     // нормализация вектора
     public Vector4f normalized() {
-        float len = length();
-        if (len == 0) {
+        if (length() == 0) {
             return new Vector4f(0, 0, 0, 0);
         }
-        return new Vector4f(x / len, y / len, z / len, w / len);
+        return new Vector4f(x / length(), y / length(), z / length(), w / length());
     }
 
     // скалярное произведение векторов
