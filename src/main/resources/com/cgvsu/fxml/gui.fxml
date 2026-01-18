@@ -8,7 +8,7 @@
 
 <AnchorPane fx:id="anchorPane" xmlns:fx="http://javafx.com/fxml" fx:controller="com.cgvsu.GuiController">
     <stylesheets>
-        <URL value="@style.css" />
+        <URL value="@style.css"/>
     </stylesheets>
 
     <MenuBar AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
@@ -28,7 +28,8 @@
                     <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="S"/>
                 </accelerator>
             </MenuItem>
-            <MenuItem mnemonicParsing="false" onAction="#onSaveTransformedModelMenuItemClick" text="Save Transformed Model">
+            <MenuItem mnemonicParsing="false" onAction="#onSaveTransformedModelMenuItemClick"
+                      text="Save Transformed Model">
                 <accelerator>
                     <KeyCodeCombination alt="UP" control="DOWN" meta="UP" shift="UP" shortcut="UP" code="A"/>
                 </accelerator>
@@ -93,15 +94,6 @@
 
         <Label text="Scene Content" style="-fx-font-size: 16; -fx-font-weight: bold;"/>
 
-        <VBox spacing="5">
-            <Label text="Loaded Models:"/>
-            <ListView fx:id="modelListView" prefHeight="150.0"/>
-            <Button text="Delete Selected Model"
-                    onAction="#onRemoveModelClick"
-                    prefWidth="280"
-                    styleClass="delete-button" />
-        </VBox>
-
         <Separator/>
 
         <Label text="Active Model Transform" style="-fx-font-weight: bold;"/>
@@ -109,47 +101,64 @@
         <VBox spacing="5">
             <Label text="Translation"/>
             <HBox spacing="5">
-                <Label text="X:" prefWidth="30"/><TextField fx:id="translateX" text="0" prefWidth="70"/>
+                <Label text="X:" prefWidth="30"/>
+                <TextField fx:id="translateX" text="0" prefWidth="70"/>
             </HBox>
             <HBox spacing="5">
-                <Label text="Y:" prefWidth="30"/><TextField fx:id="translateY" text="0" prefWidth="70"/>
+                <Label text="Y:" prefWidth="30"/>
+                <TextField fx:id="translateY" text="0" prefWidth="70"/>
             </HBox>
             <HBox spacing="5">
-                <Label text="Z:" prefWidth="30"/><TextField fx:id="translateZ" text="0" prefWidth="70"/>
+                <Label text="Z:" prefWidth="30"/>
+                <TextField fx:id="translateZ" text="0" prefWidth="70"/>
             </HBox>
         </VBox>
 
         <VBox spacing="5">
             <Label text="Rotation (degrees)"/>
             <HBox spacing="5">
-                <Label text="X:" prefWidth="30"/><TextField fx:id="rotateX" text="0" prefWidth="70"/>
+                <Label text="X:" prefWidth="30"/>
+                <TextField fx:id="rotateX" text="0" prefWidth="70"/>
             </HBox>
             <HBox spacing="5">
-                <Label text="Y:" prefWidth="30"/><TextField fx:id="rotateY" text="0" prefWidth="70"/>
+                <Label text="Y:" prefWidth="30"/>
+                <TextField fx:id="rotateY" text="0" prefWidth="70"/>
             </HBox>
             <HBox spacing="5">
-                <Label text="Z:" prefWidth="30"/><TextField fx:id="rotateZ" text="0" prefWidth="70"/>
+                <Label text="Z:" prefWidth="30"/>
+                <TextField fx:id="rotateZ" text="0" prefWidth="70"/>
             </HBox>
         </VBox>
 
         <VBox spacing="5">
             <Label text="Scale"/>
             <HBox spacing="5">
-                <Label text="X:" prefWidth="30"/><TextField fx:id="scaleX" text="1" prefWidth="70"/>
+                <Label text="X:" prefWidth="30"/>
+                <TextField fx:id="scaleX" text="1" prefWidth="70"/>
             </HBox>
             <HBox spacing="5">
-                <Label text="Y:" prefWidth="30"/><TextField fx:id="scaleY" text="1" prefWidth="70"/>
+                <Label text="Y:" prefWidth="30"/>
+                <TextField fx:id="scaleY" text="1" prefWidth="70"/>
             </HBox>
             <HBox spacing="5">
-                <Label text="Z:" prefWidth="30"/><TextField fx:id="scaleZ" text="1" prefWidth="70"/>
+                <Label text="Z:" prefWidth="30"/>
+                <TextField fx:id="scaleZ" text="1" prefWidth="70"/>
             </HBox>
         </VBox>
         <HBox spacing="5" prefWidth="280" alignment="CENTER_LEFT">
-            <CheckBox fx:id="randomTransformationCheck" text="Random transformation" onAction="#onRandomTransformationCheckClicked"/>
+            <CheckBox fx:id="randomTransformationCheck" text="Random transformation"
+                      onAction="#onRandomTransformationCheckClicked"/>
         </HBox>
         <Button text="Apply transformation" onAction="#onApplyTransformation" prefWidth="280"/>
-
         <Button text="Undo the transformation" onAction="#onOriginalModel" prefWidth="280"/>
-        <Button text="Hide Panel" onAction="#onHideTransformPanel" prefWidth="280"/>
+        <Button text="Delete Selected Model"
+                onAction="#onRemoveModelClick"
+                prefWidth="280"
+                styleClass="delete-button"/>
+        <VBox spacing="5">
+            <ListView fx:id="modelListView" prefHeight="150.0"/>
+            <Button text="Hide Panel" onAction="#onHideTransformPanel" prefWidth="280"/>
+        </VBox>
     </VBox>
+
 </AnchorPane>
