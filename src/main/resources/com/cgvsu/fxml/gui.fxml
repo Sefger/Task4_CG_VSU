@@ -144,11 +144,11 @@
                 <Label text="Z:" prefWidth="30"/><TextField fx:id="scaleZ" text="1" prefWidth="70"/>
             </HBox>
         </VBox>
-
-        <Button text="Apply transformation" onAction="#onApplyTransformation" prefWidth="280"/>
         <HBox spacing="5" prefWidth="280" alignment="CENTER_LEFT">
             <CheckBox fx:id="randomTransformationCheck" text="Random transformation" onAction="#onRandomTransformationCheckClicked"/>
         </HBox>
+        <Button text="Apply transformation" onAction="#onApplyTransformation" prefWidth="280"/>
+
         <Button text="Undo the transformation" onAction="#onOriginalModel" prefWidth="280"/>
         <Button text="Hide Panel" onAction="#onHideTransformPanel" prefWidth="280"/>
     </VBox>
