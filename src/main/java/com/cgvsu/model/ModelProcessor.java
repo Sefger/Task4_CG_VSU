@@ -102,4 +102,59 @@ public class ModelProcessor {
     public static boolean needsTriangulation(Model model) {
         return !isTriangulated(model);
     }
+
+    // Метод для удаления вершин и пересчета индексов
+    public static void deleteVertices(Model model, java.util.List<Integer> indicesToDelete) {
+        if (model == null || indicesToDelete == null || indicesToDelete.isEmpty()) return;
+
+        // 1. Используем Set для быстрого поиска
+        java.util.Set<Integer> toDeleteSet = new java.util.HashSet<>(indicesToDelete);
+
+        // 2. Удаляем все полигоны, которые содержат хотя бы одну удаляемую вершину
+        model.getPolygons().removeIf(poly -> {
+            for (int vIdx : poly.getVertexIndices()) {
+                if (toDeleteSet.contains(vIdx)) return true;
+            }
+            return false;
+        });
+
+        // 3. Создаем карту смещения индексов
+        // Новое положение вершины = старое положение - количество удаленных вершин перед ней
+        int[] indexMap = new int[model.getVertices().size()];
+        java.util.List<com.cgvsu.math.Vector3f> newVertices = new java.util.ArrayList<>();
+
+        for (int i = 0; i < model.getVertices().size(); i++) {
+            if (toDeleteSet.contains(i)) {
+                indexMap[i] = -1; // Метка удаления
+            } else {
+                indexMap[i] = newVertices.size();
+                newVertices.add(model.getVertices().get(i));
+            }
+        }
+
+        // 4. Обновляем список вершин в модели
+        model.setVertices(newVertices);
+
+        // 5. Обновляем индексы в оставшихся полигонах
+        for (com.cgvsu.model.Polygon poly : model.getPolygons()) {
+            int[] vIndices = poly.getVertexIndices();
+            for (int i = 0; i < vIndices.length; i++) {
+                vIndices[i] = indexMap[vIndices[i]];
+            }
+            poly.setVertexIndices(vIndices);
+        }
+    }
+
+    // Метод для удаления полигонов по индексам
+    public static void deletePolygons(Model model, java.util.List<Integer> indicesToDelete) {
+        if (model == null || indicesToDelete == null) return;
+        java.util.List<Integer> sorted = new java.util.ArrayList<>(indicesToDelete);
+        sorted.sort(java.util.Collections.reverseOrder());
+        System.out.println("Delete polygon");
+        for (int idx : sorted) {
+            if (idx >= 0 && idx < model.getPolygons().size()) {
+                model.getPolygons().remove(idx);
+            }
+        }
+    }
 }

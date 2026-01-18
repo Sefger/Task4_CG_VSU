@@ -97,6 +97,8 @@ public class Model {
     public List<Vector3f> getNormals() { return normals; }
     public List<Polygon> getPolygons() { return polygons; }
 
+    public void setVertices(List<Vector3f> vertices) { this.vertices = new ArrayList<>(vertices); }
+
     public ArrayList<Vector3f> getVerticesInternal() { return vertices; }
     public ArrayList<Vector2f> getTextureVerticesInternal() { return textureVertices; }
     public ArrayList<Vector3f> getNormalsInternal() { return normals; }
@@ -108,4 +110,26 @@ public class Model {
     public void addTextureVertex(Vector2f v) { this.textureVertices.add(v); }
     public void addNormal(Vector3f v) { this.normals.add(v); }
     public void addPolygon(Polygon p) { this.polygons.add(p); }
+    public void removePolygon(int index) {
+        if (index >= 0 && index < polygons.size()) {
+            polygons.remove(index);
+        }
+    }
+
+    public void removeVertex(int index) {
+        if (index < 0 || index >= vertices.size()) return;
+
+        // 1. Удаляем саму координату
+        vertices.remove(index);
+
+        // 2. Удаляем полигоны, которые использовали эту вершину
+        // Теперь используем специальный метод containsVertexIndex (см. Polygon ниже)
+        polygons.removeIf(p -> p.containsVertexIndex(index));
+
+        // 3. Сдвигаем индексы во всех оставшихся полигонах
+        for (Polygon p : polygons) {
+            p.decrementVertexIndicesGreaterThan(index);
+        }
+    }
+
 }

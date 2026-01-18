@@ -81,4 +81,33 @@ public class Polygon {
 
         return newPolygon;
     }
+    public void decrementVertexIndicesGreaterThan(int threshold) {
+        for (int i = 0; i < vertexIndices.length; i++) {
+            if (vertexIndices[i] > threshold) {
+                vertexIndices[i] -= 1;
+            }
+        }
+    }
+
+    /**
+     * Проверяет, содержит ли полигон конкретный индекс вершины.
+     */
+    public boolean containsVertexIndex(int index) {
+        for (int vIdx : vertexIndices) {
+            if (vIdx == index) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Метод для динамического добавления индекса (если понадобится при редактировании).
+     * Создает новый массив на n+1 элементов.
+     */
+    public void addVertex(int index) {
+        int[] newIndices = new int[vertexIndices.length + 1];
+        System.arraycopy(vertexIndices, 0, newIndices, 0, vertexIndices.length);
+        newIndices[vertexIndices.length] = index;
+        vertexIndices = newIndices;
+    }
+
 }
