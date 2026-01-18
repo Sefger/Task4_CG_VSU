@@ -78,6 +78,16 @@
                 </accelerator>
             </MenuItem>
         </Menu>
+        <Menu mnemonicParsing="false" text="Selection Mode">
+            <items>
+                <RadioMenuItem fx:id="deletePolygonsMode" mnemonicParsing="false" selected="true" text="Delete Polygons (Alt+Click)">
+                    <toggleGroup>
+                        <ToggleGroup fx:id="deleteModeGroup" />
+                    </toggleGroup>
+                </RadioMenuItem>
+                <RadioMenuItem fx:id="deleteVerticesMode" mnemonicParsing="false" text="Delete Vertices (Alt+Click)" toggleGroup="$deleteModeGroup" />
+            </items>
+        </Menu>
     </MenuBar>
 
     <Canvas fx:id="canvas"

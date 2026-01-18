@@ -1,9 +1,11 @@
 package com.cgvsu.render_engine;
 
 import com.cgvsu.model.Model;
+import com.cgvsu.model.ModelProcessor;
 import javafx.scene.image.Image;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Scene {
     private List<Model> models = new ArrayList<>();
@@ -51,8 +53,8 @@ public class Scene {
 
     public void addModel(Model model) {
         models.add(model);
-        originalModels.add(model);
-        textures.add(null); // Синхронно добавляем пустую текстуру
+        originalModels.add(model.copy()); // Создаем независимый клон для восстановления
+        textures.add(null);
         if (activeModelIndex == -1) activeModelIndex = 0;
     }
 
@@ -75,12 +77,6 @@ public class Scene {
 
     public List<Image> getTextures() { return textures; }
 
-    public Model getActiveModel() {
-        if (activeModelIndex >= 0 && activeModelIndex < models.size()) {
-            return models.get(activeModelIndex);
-        }
-        return null;
-    }
 
     // Метод для получения текстуры активной модели
     public Image getActiveTexture() {
@@ -104,4 +100,44 @@ public class Scene {
     }
 
     public int getActiveModelIndex() { return activeModelIndex; }
+
+
+
+    public void deletePolygonsInActiveModel(List<Integer> indices) {
+        Model activeModel = getActiveModel();
+        if (activeModel == null || indices.isEmpty()) return;
+
+        // Сортируем по убыванию, чтобы индексы не "уплыли" в процессе удаления из ArrayList
+        List<Integer> sortedIndices = indices.stream()
+                .distinct()
+                .sorted((a, b) -> b - a)
+                .collect(Collectors.toList());
+
+        for (int idx : sortedIndices) {
+            activeModel.removePolygon(idx);
+        }
+    }
+
+    public void deleteVerticesInActiveModel(List<Integer> indices) {
+        Model activeModel = getActiveModel();
+        if (activeModel == null || indices.isEmpty()) return;
+
+        // Здесь сортировка КРИТИЧЕСКИ важна.
+        // Если удалить вершину 0, то вершина 10 станет 9-й.
+        // Если удалять с конца (с 10-й), то индекс 0 останется на месте.
+        List<Integer> sortedIndices = indices.stream()
+                .distinct()
+                .sorted((a, b) -> b - a)
+                .collect(Collectors.toList());
+
+        for (int idx : sortedIndices) {
+            activeModel.removeVertex(idx);
+        }
+    }
+
+    public Model getActiveModel() {
+        if (activeModelIndex < 0 || activeModelIndex >= models.size()) return null;
+        return models.get(activeModelIndex);
+    }
+
 }

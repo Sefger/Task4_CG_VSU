@@ -84,8 +84,8 @@ public class AffineTransformation {
             float sx, float sy, float sz) {
         Matrix4x4 scale = scale(sx, sy, sz);
         Matrix4x4 rotateX = rotationX(rx);
-        Matrix4x4 rotateY = rotationX(ry);
-        Matrix4x4 rotateZ = rotationX(rz);
+        Matrix4x4 rotateY = rotationY(ry);
+        Matrix4x4 rotateZ = rotationZ(rz);
         Matrix4x4 translate = translation(tx, ty, tz);
 
         return combine(translate, rotateZ, rotateY, rotateX, scale);

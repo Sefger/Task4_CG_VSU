@@ -30,6 +30,11 @@ public class Vector3f {
         z += other.z;
     }
 
+
+    public static Vector3f add(Vector3f v1, Vector3f v2 ) {
+        return new Vector3f(v1.getX()+ v2.getX(), v1.getY()+ v2.getY(), v1.getZ()+ v2.getZ());
+    }
+
     // вычитание векторов
     public Vector3f subtract(Vector3f other) {
         return new Vector3f(x - other.x, y - other.y, z - other.z);
@@ -79,4 +84,17 @@ public class Vector3f {
         this.y = y;
         this.z = z;
     }
+
+    public float lengthSquared() {
+        return x * x + y * y + z * z;
+    }
+    public static Vector3f subtract(Vector3f v1, Vector3f v0){
+        return new Vector3f(
+                v1.getX() - v0.getX(),
+                v1.getY() - v0.getY(),
+                v1.getZ() - v0.getZ()
+        );
+    }
+
+
 }

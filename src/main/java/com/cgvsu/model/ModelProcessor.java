@@ -102,4 +102,5 @@ public class ModelProcessor {
     public static boolean needsTriangulation(Model model) {
         return !isTriangulated(model);
     }
+
 }
