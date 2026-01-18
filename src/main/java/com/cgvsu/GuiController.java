@@ -81,17 +81,25 @@ public class GuiController {
     }
 
     private void render() {
-        if (randomTransformation && scene.getActiveModel() != null) AffineTransformation.randomTransformation(scene.getActiveModel());;
+        if (randomTransformation && scene.getActiveModel() != null) {
+            AffineTransformation.randomTransformation(scene.getActiveModel());
+        }
 
         double width = canvas.getWidth();
         double height = canvas.getHeight();
         var gc = canvas.getGraphicsContext2D();
+
+        // 1. Очищаем визуальный слой Canvas
         gc.clearRect(0, 0, width, height);
 
         Camera activeCamera = scene.getActiveCamera();
         if (activeCamera == null) return;
         activeCamera.setAspectRatio((float) (width / height));
 
+        // --- ВАЖНОЕ ИСПРАВЛЕНИЕ: Очистка Z-буфера ОДИН РАЗ на весь кадр ---
+        RenderEngine.prepareZBuffer((int) width, (int) height);
+
+        // 2. Рисуем все модели сцены
         for (int i = 0; i < scene.getModels().size(); i++) {
             Model m = scene.getModels().get(i);
             RenderEngine.render(
@@ -107,6 +115,8 @@ public class GuiController {
                 RenderEngine.renderAxes(gc, activeCamera, m.getModelMatrix(), (int) width, (int) height);
             }
         }
+
+        // 3. Маркеры камер тоже должны учитывать общую глубину
         renderMarkers(width, height);
     }
 
