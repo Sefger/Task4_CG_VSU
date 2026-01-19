@@ -35,8 +35,8 @@ public class RenderEngine {
             boolean drawGrid,
             boolean useTexture,
             boolean useLighting,
-            int selectedPolyIdx,   // ID выбранного полигона (-1 если нет)
-            int selectedVertexIdx  // ID выбранной вершины (-1 если нет)
+            int selectedPolyIdx,
+            int selectedVertexIdx
     ) {
         // Z-буфер должен быть подготовлен в GuiController ДО вызова этого метода!
 
@@ -49,102 +49,185 @@ public class RenderEngine {
             Polygon poly = polygons.get(pIdx);
             int[] vIdx = poly.getVertexIndices();
 
-            for (int i = 1; i < vIdx.length - 1; i++) {
-                int[] triV = {vIdx[0], vIdx[i], vIdx[i + 1]};
+            // Пропускаем полигоны с менее чем 3 вершин
+            if (vIdx.length < 3) {
+                continue;
+            }
 
-                float[] sx = new float[3];
-                float[] sy = new float[3];
-                float[] sz = new float[3];
-                float[] vIntensities = new float[3];
-                boolean skipTriangle = false;
+            // 1. Подготовим экранные координаты для всех вершин полигона
+            float[] sx = new float[vIdx.length];
+            float[] sy = new float[vIdx.length];
+            float[] sz = new float[vIdx.length];
+            float[] vIntensities = new float[vIdx.length];
+            boolean skipPolygon = false;
 
-                // Сначала считаем экранные координаты, чтобы определить area
-                for (int j = 0; j < 3; j++) {
-                    Vector3f vertex = mesh.getVertices().get(triV[j]);
-                    Vector3f transV = GraphicConveyor.multiplyMatrix4ByVector3(mvp, vertex);
-
-                    if (transV.z < -1 || transV.z > 1) { skipTriangle = true; break; }
-
-                    sx[j] = (transV.x + 1) * width * 0.5f;
-                    sy[j] = (1 - transV.y) * height * 0.5f;
-                    sz[j] = transV.z;
+            for (int j = 0; j < vIdx.length; j++) {
+                // Проверка индекса вершины
+                if (vIdx[j] < 0 || vIdx[j] >= mesh.getVertices().size()) {
+                    skipPolygon = true;
+                    break;
                 }
 
-                if (skipTriangle) continue;
+                Vector3f vertex = mesh.getVertices().get(vIdx[j]);
+                Vector3f transV = GraphicConveyor.multiplyMatrix4ByVector3(mvp, vertex);
 
-                // Определяем ориентацию (лицо/изнанка)
-                float area = (sx[1] - sx[0]) * (sy[2] - sy[0]) - (sy[1] - sy[0]) * (sx[2] - sx[0]);
-                boolean isBackFace = (area > 0);
+                if (transV.z < -1 || transV.z > 1) {
+                    skipPolygon = true;
+                    break;
+                }
 
-                // Рассчет освещения (с учетом инверсии для внутренних стенок)
-                for (int j = 0; j < 3; j++) {
-                    if (useLighting && lights != null && !mesh.getNormals().isEmpty()) {
-                        Vector3f vertex = mesh.getVertices().get(triV[j]);
-                        Vector3f worldPos = GraphicConveyor.multiplyMatrix4ByVector3(modelMatrix, vertex);
-                        Vector3f normal = mesh.getNormals().get(triV[j]);
+                sx[j] = (transV.x + 1) * width * 0.5f;
+                sy[j] = (1 - transV.y) * height * 0.5f;
+                sz[j] = transV.z;
+            }
 
-                        Vector3f worldNormal = GraphicConveyor.multiplyMatrix4ByVector3(modelMatrix, normal)
-                                .subtract(GraphicConveyor.multiplyMatrix4ByVector3(modelMatrix, new Vector3f(0,0,0)))
-                                .normalized();
+            if (skipPolygon) continue;
 
-                        // Если это изнанка, инвертируем нормаль, чтобы свет падал на внутреннюю стенку
-                        if (isBackFace) {
-                            worldNormal = new Vector3f(-worldNormal.x, -worldNormal.y, -worldNormal.z);
+            // 2. Рассчет освещения для каждой вершины (если нужно)
+            if (useLighting && lights != null) {
+                // Получаем индексы нормалей ДЛЯ ЭТОГО ПОЛИГОНА
+                int[] nIdx = poly.getNormalIndices();
+
+                for (int j = 0; j < vIdx.length; j++) {
+                    Vector3f vertex = mesh.getVertices().get(vIdx[j]);
+                    Vector3f worldPos = GraphicConveyor.multiplyMatrix4ByVector3(modelMatrix, vertex);
+
+                    Vector3f normal;
+
+                    // ПРОВЕРКА: есть ли нормали у этой вершины в файле?
+                    if (nIdx != null && nIdx.length == vIdx.length && nIdx[j] != -1) {
+                        // Нормаль загружена из файла
+                        int normalIdx = nIdx[j];
+                        if (normalIdx >= 0 && normalIdx < mesh.getNormals().size()) {
+                            // БЕРЕМ НОРМАЛЬ ИЗ ФАЙЛА
+                            normal = mesh.getNormals().get(normalIdx);
+                        } else {
+                            // Если индекс нормали некорректен, используем нормаль по умолчанию
+                            normal = calculatePolygonNormal(poly, mesh.getVertices());
                         }
-
-                        vIntensities[j] = GraphicConveyor.calculateTotalLighting(worldPos, worldNormal, lights);
                     } else {
-                        vIntensities[j] = 1.0f;
+                        // Если в полигоне нет нормалей, вычисляем нормаль полигона
+                        normal = calculatePolygonNormal(poly, mesh.getVertices());
+                    }
+
+                    // Преобразуем нормаль в мировое пространство
+                    // GraphicConveyor.calculateTotalLighting будет нормализовать нормаль внутри себя
+                    vIntensities[j] = GraphicConveyor.calculateTotalLighting(worldPos, normal, lights);
+                }
+            } else {
+                // Если освещение отключено, используем полную яркость
+                Arrays.fill(vIntensities, 0, vIdx.length, 1.0f);
+            }
+
+            // 3. Триангуляция веером ТОЛЬКО для растеризации (заливки)
+            // Это нужно потому что методы растеризации (rasterizeTriangle) обычно работают только с треугольниками
+            for (int i = 1; i < vIdx.length - 1; i++) {
+                // Индексы для текущего треугольника
+                int idx0 = 0;          // Центральная вершина
+                int idx1 = i;          // Текущая вершина
+                int idx2 = i + 1;      // Следующая вершина
+
+                // Подготовка данных для треугольника
+                Vector2f[] screenCoords = new Vector2f[3];
+                float[] depths = new float[3];
+                int[] vertexIndices = new int[3];
+                float[] intensities = new float[3];
+
+                screenCoords[0] = new Vector2f(sx[idx0], sy[idx0]);
+                screenCoords[1] = new Vector2f(sx[idx1], sy[idx1]);
+                screenCoords[2] = new Vector2f(sx[idx2], sy[idx2]);
+
+                depths[0] = sz[idx0];
+                depths[1] = sz[idx1];
+                depths[2] = sz[idx2];
+
+                vertexIndices[0] = vIdx[idx0];
+                vertexIndices[1] = vIdx[idx1];
+                vertexIndices[2] = vIdx[idx2];
+
+                intensities[0] = vIntensities[idx0];
+                intensities[1] = vIntensities[idx1];
+                intensities[2] = vIntensities[idx2];
+
+                // Получаем текстурные координаты (если есть)
+                int[] texIndices = null;
+                if (useTexture) {
+                    int[] allTexIndices = poly.getTextureVertexIndices();
+                    if (allTexIndices != null && allTexIndices.length == vIdx.length) {
+                        texIndices = new int[]{
+                                allTexIndices[idx0],
+                                allTexIndices[idx1],
+                                allTexIndices[idx2]
+                        };
                     }
                 }
 
-                // 1. Растеризация закрашенного треугольника
-                // Теперь вызываем всегда, не пропуская area > 0
+                // 4. Растеризация треугольника (для заливки)
+                // ТОЛЬКО если нужно заливать (текстура, освещение или не рисуем сетку)
                 if (useTexture || useLighting || !drawGrid) {
                     GraphicConveyor.rasterizeTriangle(
                             gc.getPixelWriter(), zBuffer, width, height,
-                            new Vector2f(sx[0], sy[0]), new Vector2f(sx[1], sy[1]), new Vector2f(sx[2], sy[2]),
-                            sz[0], sz[1], sz[2],
-                            triV, poly.getTextureVertexIndices(), mesh, vIntensities,
+                            screenCoords[0], screenCoords[1], screenCoords[2],
+                            depths[0], depths[1], depths[2],
+                            vertexIndices, texIndices, mesh, intensities,
                             useTexture ? texture : null, useLighting
                     );
                 }
 
-                // 2. Отрисовка сетки
-                if (drawGrid || pIdx == selectedPolyIdx) {
-                    if (pIdx == selectedPolyIdx) {
-                        gc.setStroke(javafx.scene.paint.Color.RED);
-                        gc.setLineWidth(2.0);
-                    } else {
-                        // Лицевая сетка - черная, внутренняя - серая
-                        gc.setStroke(isBackFace ? javafx.scene.paint.Color.GRAY : javafx.scene.paint.Color.BLACK);
-                        gc.setLineWidth(0.5);
-                    }
+                // 5. НЕ рисуем грани треугольника здесь - рисуем ниже весь полигон целиком
+            }
 
-                    gc.strokePolygon(
-                            new double[]{sx[0], sx[1], sx[2]},
-                            new double[]{sy[0], sy[1], sy[2]},
-                            3
-                    );
+            // 6. Отрисовка сетки (грани полигона)
+            if (drawGrid) {
+                if (pIdx == selectedPolyIdx) {
+                    gc.setStroke(javafx.scene.paint.Color.RED);
+                    gc.setLineWidth(2.0);
+                } else {
+                    gc.setStroke(javafx.scene.paint.Color.BLACK);
+                    gc.setLineWidth(0.5);
                 }
 
-                // 3. Выбранная вершина (с проверкой глубины, чтобы не "рентгенить")
-                if (selectedVertexIdx != -1) {
-                    for (int j = 0; j < 3; j++) {
-                        if (triV[j] == selectedVertexIdx) {
-                            int px = (int) sx[j];
-                            int py = (int) sy[j];
-                            if (px >= 0 && px < width && py >= 0 && py < height) {
-                                if (sz[j] <= zBuffer[py * width + px] + 0.001f) {
-                                    gc.setFill(javafx.scene.paint.Color.BLUE);
-                                    gc.fillOval(sx[j] - 4, sy[j] - 4, 8, 8);
-                                }
+                // Рисуем ВСЕ грани полигона (N-угольника)
+                for (int i = 0; i < vIdx.length; i++) {
+                    int next = (i + 1) % vIdx.length;
+                    gc.strokeLine(sx[i], sy[i], sx[next], sy[next]);
+                }
+            }
+
+            // 7. Отображение выбранной вершины (ЭТУ ЧАСТЬ Я ВЕРНУЛ)
+            if (selectedVertexIdx != -1) {
+                for (int j = 0; j < vIdx.length; j++) {
+                    if (vIdx[j] == selectedVertexIdx) {
+                        int px = (int) sx[j];
+                        int py = (int) sy[j];
+                        if (px >= 0 && px < width && py >= 0 && py < height) {
+                            if (sz[j] <= zBuffer[py * width + px] + 0.001f) {
+                                gc.setFill(javafx.scene.paint.Color.BLUE);
+                                gc.fillOval(sx[j] - 4, sy[j] - 4, 8, 8);
                             }
                         }
                     }
                 }
             }
         }
+    }
+
+    // Метод для вычисления нормали полигона (используется, если в файле нет нормалей)
+    private static Vector3f calculatePolygonNormal(Polygon poly, List<Vector3f> vertices) {
+        int[] vIdx = poly.getVertexIndices();
+        if (vIdx.length < 3) {
+            return new Vector3f(0, 0, 1); // Нормаль по умолчанию
+        }
+
+        // Берем первые три вершины полигона
+        Vector3f v0 = vertices.get(vIdx[0]);
+        Vector3f v1 = vertices.get(vIdx[1]);
+        Vector3f v2 = vertices.get(vIdx[2]);
+
+        // Вычисляем нормаль через векторное произведение
+        Vector3f edge1 = Vector3f.subtract(v1, v0);
+        Vector3f edge2 = Vector3f.subtract(v2, v0);
+        return edge1.cross(edge2);
     }
 
     public static void renderAxes(
@@ -240,5 +323,4 @@ public class RenderEngine {
 
         return (t > 0) ? t : -1; // Возвращаем дистанцию только если треугольник впереди
     }
-
 }

@@ -62,32 +62,6 @@ public class Model {
         return newModel;
     }
 
-    // --- Методы процессора (делегирование) ---
-
-    public void computeNormals() {
-        ModelProcessor.computeNormals(this);
-    }
-
-    public void triangulate() {
-        ModelProcessor.triangulate(this);
-    }
-
-    public Model triangulateWithEarClipping() {
-        return ModelProcessor.triangulateWithEarClipping(this);
-    }
-
-    public boolean needsTriangulation() {
-        return ModelProcessor.needsTriangulation(this);
-    }
-
-    public boolean isTriangulated() {
-        return ModelProcessor.isTriangulated(this);
-    }
-
-    public String getPolygonStatistics() {
-        return ModelProcessor.getPolygonStatistics(this);
-    }
-
     // --- Геттеры (Оптимизированы для скорости) ---
 
     // Возвращаем unmodifiable только если это критически важно для безопасности.

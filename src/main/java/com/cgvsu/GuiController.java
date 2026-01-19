@@ -172,8 +172,8 @@ public class GuiController {
         if (file == null) return;
         try {
             Model m = ObjReader.read(Files.readString(file.toPath()));
-            ModelProcessor.triangulate(m);
-            ModelProcessor.computeNormals(m);
+//            ModelProcessor.triangulate(m);
+//            ModelProcessor.computeNormals(m);
             m.setModelMatrix(AffineTransformation.translation(scene.getModels().size() * 5.0f, 0, 0));
             scene.addModel(m);
             modelListView.getItems().add("Model " + scene.getModels().size() + ": " + file.getName());
